@@ -2,202 +2,90 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>경희실용음악학원 - 입시 리포트 시스템</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        
-        :root { 
-            --primary-color: #2c3e50; 
-            --accent-color: #3498db; 
-            --bg-color: #f4f7fa; 
-            --border-color: #dcdde1;
-        }
-
-        * { 
-            box-sizing: border-box; 
-            font-family: 'Pretendard', -apple-system, sans-serif !important;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0;
-            color: var(--primary-color);
-        }
-
-        .card {
-            background: white; 
-            padding: 40px; 
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            width: 420px; 
-            text-align: center;
-        }
-
-        .header-logo {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--accent-color);
-            letter-spacing: 2px;
-            margin-bottom: 8px;
-        }
-
-        h2 { 
-            margin: 0 0 30px 0; 
-            font-size: 26px; 
-            font-weight: 900; 
-            letter-spacing: -1px;
-            color: var(--primary-color);
-        }
-
-        .field { text-align: left; margin-bottom: 18px; }
-        label { 
-            display: block; 
-            font-size: 13px; 
-            color: #7f8c8d; 
-            margin-bottom: 6px; 
-            font-weight: 700;
-            padding-left: 2px;
-        }
-
-        input[type=text], input[type=date], select {
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border-color);
-            font-size: 15px; 
-            background-color: #fff; 
-            transition: all 0.2s; 
-            display: block;
-            outline: none;
-            font-weight: 500;
-        }
-
-        input:focus, select:focus { 
-            border-color: var(--accent-color); 
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        select {
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat; 
-            background-position: right 15px center; 
-            background-size: 14px; 
-            cursor: pointer;
-        }
-
-        .btn-group { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; }
-        
-        button {
-            padding: 15px; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-size: 15px; 
-            font-weight: 800; 
-            width: 100%;
-            transition: 0.2s;
-        }
-
-        .primary-btn { background: var(--primary-color); color: white; }
-        .primary-btn:hover { background: #1a252f; transform: translateY(-1px); }
-
-        .admin-btn {
-            background: transparent;
-            color: #7f8c8d;
-            border: 1px solid var(--border-color);
-            font-size: 13px;
-        }
-        .admin-btn:hover { background: #f8f9fa; color: var(--primary-color); border-color: var(--primary-color); }
-
-        .footer-text { margin-top: 25px; font-size: 12px; color: #bdc3c7; font-weight: 500; }
-    </style>
+    <link rel="stylesheet" href="assets/css/common.css">
 </head>
-<body>
+<body class="centered" hidden>
 
 <div class="card">
-    <div class="header-logo">KYUNGHEE MUSIC</div>
+    <div class="header-tag">KYUNGHEE MUSIC</div>
     <h2>입시 분석 시스템</h2>
 
-    <div class="field">
-        <label>내담자 이름</label>
-        <input type="text" id="name" placeholder="학생 성명을 입력하세요">
-    </div>
-    
-    <div class="field">
-        <label>나이 / 학년</label>
-        <input type="text" id="age" placeholder="예: 18세 (고2)">
-    </div>
-    
-    <div class="field">
-        <label>지원 전공</label>
-        <select id="major">
-            <option value="">전공을 선택하세요</option>
-            <option value="보컬">보컬</option>
-            <option value="드럼">드럼</option>
-            <option value="베이스">베이스</option>
-            <option value="기타">기타</option>
-            <option value="피아노">피아노</option>
-            <option value="작곡">작곡</option>
-            <option value="싱송">싱송</option>
-            <option value="미디">미디</option>
-        </select>
-    </div>
+    <form id="client-form">
+        <div class="field">
+            <label for="name">내담자 이름</label>
+            <input type="text" id="name" maxlength="50" placeholder="학생 성명을 입력하세요">
+        </div>
 
-    <!-- 추가된 목표 학교 필드 -->
-    <div class="field">
-        <label>목표 학교 (지망 대학)</label>
-        <input type="text" id="target-school" placeholder="예: 서울예대, 동아방송대">
-    </div>
+        <div class="field">
+            <label for="age">나이 / 학년</label>
+            <input type="text" id="age" maxlength="30" placeholder="예: 18세 (고2)">
+        </div>
 
-    <div class="field">
-        <label>분석 일시</label>
-        <input type="date" id="date">
-    </div>
-    
-    <div class="btn-group">
-        <button class="primary-btn" onclick="goToTest()">레벨 테스트 시작하기</button>
-        <button class="admin-btn" onclick="location.href='admin.html'">📋 리포트 대시보드 관리</button>
-    </div>
+        <div class="field">
+            <label for="major">지원 전공</label>
+            <select id="major">
+                <option value="">전공을 선택하세요</option>
+            </select>
+        </div>
 
-    <div class="footer-text">© KYUNGHEE MUSIC ACADEMY</div>
+        <div class="field">
+            <label for="target-school">목표 학교 (지망 대학)</label>
+            <input type="text" id="target-school" maxlength="100" placeholder="예: 서울예대, 동아방송대">
+        </div>
+
+        <div class="field">
+            <label for="date">분석 일시</label>
+            <input type="date" id="date">
+        </div>
+
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">레벨 테스트 시작하기</button>
+            <button type="button" id="admin-btn" class="btn btn-outline">📋 리포트 대시보드 관리</button>
+        </div>
+    </form>
+
+    <div class="footer-text">
+        © KYUNGHEE MUSIC ACADEMY · <button type="button" id="logout-btn" class="link-btn">로그아웃</button>
+    </div>
 </div>
 
-<script>
-// Supabase 설정
-const SUPABASE_URL = "https://gnveewglucbnmuvjupst.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmVld2dsdWNibm11dmp1cHN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3Mjk1OTgsImV4cCI6MjA4OTMwNTU5OH0.9bu4YcGX1DM4gxy1vPr2KclJV7KIhgLStLs9eEZdXuk";
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script type="module">
+import { requireAuth, logout } from './assets/js/firebase.js';
+import { MAJORS } from './assets/js/fields.js';
+import { todayLocal, saveDraft } from './assets/js/utils.js';
 
-function goToTest() {
-    const name = document.getElementById('name').value;
-    const major = document.getElementById('major').value;
+await requireAuth();
 
-    if(!name || !major) {
+const $ = id => document.getElementById(id);
+
+MAJORS.forEach(m => $('major').add(new Option(m, m)));
+$('date').value = todayLocal();
+
+$('client-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('name').value.trim();
+    const major = $('major').value;
+
+    if (!name || !major) {
         alert("이름과 전공은 필수 입력 사항입니다.");
         return;
     }
 
-    const clientData = {
-        name: name,
-        age: document.getElementById('age').value || "미입력",
-        major: major,
-        targetSchool: document.getElementById('target-school').value || "미입력", // 여기에 데이터 저장
-        date: document.getElementById('date').value
-    };
+    // 새 학생 입력이므로 이전 임시 데이터(점수 포함)는 통째로 교체
+    saveDraft({
+        name,
+        age: $('age').value.trim() || "미입력",
+        major,
+        targetSchool: $('target-school').value.trim() || "미입력",
+        date: $('date').value || todayLocal()
+    });
+    location.href = "test.html";
+});
 
-    localStorage.setItem("clientData", JSON.stringify(clientData));
-    window.location.href = "test.html";
-}
-
-// 오늘 날짜 기본 세팅
-document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+$('admin-btn').addEventListener('click', () => location.href = 'admin.html');
+$('logout-btn').addEventListener('click', logout);
 </script>
 
 </body>

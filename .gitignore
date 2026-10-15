@@ -1,0 +1,7 @@
+# 학생 개인정보가 들어있는 DB 백업 파일은 저장소에 올리지 않기
+*.backup
+*.backup.gz
+*.sql
+entrance_reports-*.json
+.DS_Store
+node_modules/

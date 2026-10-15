@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>경희실용음악학원 - 로그인</title>
+    <link rel="stylesheet" href="assets/css/common.css">
+    <style>
+        .error-text { color: var(--danger-color); font-size: 13px; font-weight: 600; min-height: 18px; margin-top: 12px; }
+    </style>
+</head>
+<body class="centered">
+
+<div class="card">
+    <div class="header-tag">KYUNGHEE MUSIC</div>
+    <h2>관리자 로그인</h2>
+
+    <form id="login-form">
+        <div class="field">
+            <label for="email">이메일</label>
+            <input type="email" id="email" autocomplete="username" required>
+        </div>
+        <div class="field">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" autocomplete="current-password" required>
+        </div>
+        <div class="btn-group">
+            <button type="submit" id="login-btn" class="btn btn-primary">로그인</button>
+        </div>
+        <div id="error" class="error-text"></div>
+    </form>
+
+    <div class="footer-text">© KYUNGHEE MUSIC ACADEMY</div>
+</div>
+
+<script type="module">
+import { auth, signInWithEmailAndPassword, onAuthStateChanged } from './assets/js/firebase.js';
+
+// 다른 사이트로 튕기지 않도록 같은 폴더의 .html만 허용
+const next = new URLSearchParams(location.search).get('next');
+const target = next && /^[\w-]+\.html(\?[\w=&%.-]*)?$/.test(next) ? next : 'index.html';
+
+const unsubscribe = onAuthStateChanged(auth, user => {
+    unsubscribe();
+    if (user) location.replace(target);
+});
+
+const ERROR_MESSAGES = {
+    'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.',
+    'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
+    'auth/too-many-requests': '시도 횟수가 너무 많습니다. 잠시 후 다시 시도하세요.',
+    'auth/network-request-failed': '네트워크 연결을 확인하세요.'
+};
+
+document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const errorBox = document.getElementById('error');
+    btn.disabled = true;
+    errorBox.textContent = '';
+    try {
+        await signInWithEmailAndPassword(
+            auth,
+            document.getElementById('email').value.trim(),
+            document.getElementById('password').value
+        );
+        location.replace(target);
+    } catch (err) {
+        errorBox.textContent = ERROR_MESSAGES[err.code] || `로그인 실패: ${err.message}`;
+        btn.disabled = false;
+    }
+});
+</script>
+
+</body>
+</html>

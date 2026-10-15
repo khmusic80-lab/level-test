@@ -2,64 +2,22 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>경희실용음악학원 - 레벨 테스트 평가</title>
+    <link rel="stylesheet" href="assets/css/common.css">
     <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        
-        :root { 
-            --primary-color: #2c3e50; 
-            --accent-color: #3498db; 
-            --bg-color: #f4f7fa; 
-            --border-color: #dcdde1;
-        }
+        .card { max-width: 520px; padding: 50px 40px; }
 
-        * { 
-            box-sizing: border-box; 
-            font-family: 'Pretendard', -apple-system, sans-serif !important;
-        }
+        .header-tag { font-size: 13px; letter-spacing: 1px; }
 
-        body {
-            background-color: var(--bg-color);
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0;
-            padding: 20px;
-            color: var(--primary-color);
-        }
+        .card h2 { margin-bottom: 10px; }
 
-        .card {
-            background: white; 
-            padding: 50px 40px; 
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            width: 520px; 
-            text-align: center;
-        }
-
-        .header-tag {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--accent-color);
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-
-        h2 { 
-            margin: 0 0 10px 0; 
-            font-size: 26px; 
-            font-weight: 900; 
-            letter-spacing: -1px;
-        }
-
-        .student-info-box { 
+        .student-info-box {
             background: #f8f9fa;
             padding: 12px;
             border-radius: 8px;
-            font-size: 15px; 
-            color: var(--primary-color); 
-            margin-bottom: 35px; 
+            font-size: 15px;
+            margin-bottom: 35px;
             font-weight: 700;
             border: 1px solid var(--border-color);
         }
@@ -68,37 +26,19 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px 25px;
-            text-align: left;
         }
 
         .field { margin-bottom: 0; }
-        
-        /* [수정] 항목명 스타일: 배경 없이 파란색 글씨로만 강조 */
-        label { 
-            display: block; 
-            font-size: 14px; 
-            color: var(--accent-color); 
-            margin-bottom: 8px; 
+
+        /* 항목명: 배경 없이 파란색 글씨로만 강조 */
+        .field label {
+            font-size: 14px;
+            color: var(--accent-color);
+            margin-bottom: 8px;
             font-weight: 800;
-            padding-left: 2px;
         }
 
-        input[type=number] {
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border-color);
-            font-size: 15px; 
-            background-color: #fff; 
-            transition: all 0.2s; 
-            outline: none;
-            font-weight: 600;
-        }
-
-        input:focus { 
-            border-color: var(--accent-color); 
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
+        .field input { font-weight: 600; }
 
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -106,33 +46,15 @@
             margin: 0;
         }
 
-        button {
-            margin-top: 40px; 
-            padding: 16px; 
-            border: none; 
-            background: var(--primary-color); 
-            color: white; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: 800; 
-            width: 100%;
-            transition: 0.2s;
-        }
+        #submit-btn { margin-top: 40px; padding: 16px; font-size: 16px; }
 
-        button:hover { 
-            background: #1a252f;
-            transform: translateY(-1px); 
-        }
-
-        .footer-text {
-            margin-top: 25px;
-            font-size: 12px;
-            color: #bdc3c7;
+        @media (max-width: 480px) {
+            .card { padding: 32px 20px; }
+            #dynamic-fields { gap: 16px; }
         }
     </style>
 </head>
-<body>
+<body class="centered" hidden>
 
 <div class="card">
     <div class="header-tag">LEVEL TEST</div>
@@ -141,62 +63,71 @@
 
     <div id="dynamic-fields"></div>
 
-    <button onclick="goToResult()">최종 리포트 생성하기</button>
+    <button type="button" id="submit-btn" class="btn btn-primary">최종 리포트 생성하기</button>
     <div class="footer-text">각 항목은 0~100점 사이로 평가해 주세요.</div>
 </div>
 
-<script>
-const config = {
-    vocalGroup: [
-        { id: 'a', label: '이론' }, { id: 'b', label: '시창' },
-        { id: 'c', label: '음감' }, { id: 'd', label: '리듬감' },
-        { id: 'e', label: '발음' }, { id: 'f', label: '악기능력' },
-        { id: 'g', label: '장르의 이해' }, { id: 'h', label: '나이' },
-        { id: 'i', label: '톤' }
-    ],
-    instrumentGroup: [
-        { id: 'a', label: '이론' }, { id: 'b', label: '초견능력' },
-        { id: 'c', label: '리듬감' }, { id: 'd', label: '음감' },
-        { id: 'e', label: '테크닉' }, { id: 'f', label: '나이' },
-        { id: 'g', label: '장르의 이해' }, { id: 'h', label: '터치 및 톤' }
-    ]
-};
+<script type="module">
+import { requireAuth } from './assets/js/firebase.js';
+import { getFields } from './assets/js/fields.js';
+import { escapeHtml, isValidScore, loadDraft, saveDraft } from './assets/js/utils.js';
 
-const clientData = JSON.parse(localStorage.getItem("clientData"));
-if (!clientData) {
+await requireAuth();
+
+const draft = loadDraft();
+if (!draft) {
     alert("인적사항 데이터가 없습니다. 첫 페이지로 이동합니다.");
-    window.location.href = "index.html";
+    location.replace("index.html");
+} else {
+    init(draft);
 }
 
-document.getElementById('display-info').innerText = `${clientData.name} 학생 · ${clientData.major}`;
+function init(draft) {
+    document.getElementById('display-info').textContent = `${draft.name} 학생 · ${draft.major}`;
 
-const isVocal = (clientData.major === '보컬' || clientData.major === '싱송');
-const targetFields = isVocal ? config.vocalGroup : config.instrumentGroup;
+    const fields = getFields(draft.major);
+    const inputOf = f => document.getElementById(`score-${f.key}`);
 
-const container = document.getElementById('dynamic-fields');
-container.innerHTML = targetFields.map(f => `
-    <div class="field">
-        <label>${f.label}</label>
-        <input type="number" id="${f.id}" min="0" max="100" placeholder="점수 입력">
-    </div>
-`).join('');
+    document.getElementById('dynamic-fields').innerHTML = fields.map(f => `
+        <div class="field">
+            <label for="score-${f.key}">${escapeHtml(f.label)}</label>
+            <input type="number" id="score-${f.key}" min="0" max="100" inputmode="decimal" placeholder="점수 입력">
+        </div>
+    `).join('');
 
-function goToResult() {
-    const data = {};
-    let allFilled = true;
-
-    targetFields.forEach(f => {
-        const val = document.getElementById(f.id).value;
-        if (!val) allFilled = false;
-        data[f.id] = val || 0;
-    });
-
-    if (!allFilled) {
-        if (!confirm("입력되지 않은 항목이 있습니다. 그대로 진행할까요?")) return;
+    // 결과 화면에서 뒤로 왔을 때 입력했던 점수 복원
+    if (draft.scores) {
+        fields.forEach(f => {
+            if (draft.scores[f.key] != null) inputOf(f).value = draft.scores[f.key];
+        });
     }
 
-    localStorage.setItem("myData", JSON.stringify(data));
-    window.location.href = "result.html";
+    document.getElementById('submit-btn').addEventListener('click', () => {
+        const scores = {};
+        let hasEmpty = false;
+
+        for (const f of fields) {
+            const input = inputOf(f);
+            const raw = input.value.trim();
+            if (raw === '') {
+                hasEmpty = true;
+                scores[f.key] = 0;
+                continue;
+            }
+            const n = Number(raw);
+            if (!isValidScore(n)) {
+                alert(`[${f.label}] 0~100 사이의 숫자를 입력해 주세요.`);
+                input.focus();
+                return;
+            }
+            scores[f.key] = n;
+        }
+
+        if (hasEmpty && !confirm("입력되지 않은 항목이 있습니다. 0점으로 처리하고 진행할까요?")) return;
+
+        saveDraft({ ...draft, scores });
+        location.href = "result.html";
+    });
 }
 </script>
 

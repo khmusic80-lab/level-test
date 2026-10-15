@@ -2,53 +2,76 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>경희실용음악 - 리포트 관리 대시보드</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <link rel="stylesheet" href="assets/css/common.css">
     <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        body { font-family: 'Pretendard'; background: #f4f7fa; padding: 40px; color: #2c3e50; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        .control-bar { background: white; padding: 20px; border-radius: 12px; display: flex; gap: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        body { padding: 40px; }
+        .header { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; }
+        .header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .header-actions button { padding: 10px 20px; cursor: pointer; border: 1px solid var(--border-color); background: white; border-radius: 8px; font-weight: 600; }
+
+        .control-bar { background: white; padding: 20px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input, select, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .search-input { flex: 1; }
+        .search-input { flex: 1; min-width: 180px; }
 
-        .table-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; }
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; padding: 15px; border-bottom: 2px solid #edf2f7; text-align: left; color: #7f8c8d; font-size: 13px; }
+        th { background: #f8f9fa; padding: 15px; border-bottom: 2px solid #edf2f7; text-align: left; color: var(--muted-color); font-size: 13px; white-space: nowrap; }
         td { padding: 15px; border-bottom: 1px solid #edf2f7; font-size: 15px; }
-        
-        .tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #ffeaa7; color: #d63031; }
-        
-        .btn-view { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-        .btn-edit { background: #f1c40f; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-        .btn-del { background: #ff7675; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .empty-row { text-align: center; color: var(--muted-color); padding: 40px; }
+        .avg-cell { color: var(--danger-color); font-weight: 800; }
+        .actions { white-space: nowrap; }
 
-        /* 수정 모달 스타일 업그레이드 */
-        #edit-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center; }
-        .modal-content { background:white; padding:30px; border-radius:15px; width:600px; max-height:90vh; overflow-y:auto; }
-        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; border-top: 1px solid #eee; pt: 15px; margin-top: 15px; }
-        .modal-field { display:flex; flex-direction:column; margin-bottom: 10px; }
-        .modal-field label { font-weight:bold; margin-bottom:5px; font-size:12px; color: #666; }
+        .tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #ffeaa7; color: #d63031; }
+
+        .btn-view, .btn-edit, .btn-del { color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-view { background: var(--accent-color); }
+        .btn-edit { background: #f1c40f; }
+        .btn-del { background: #ff7675; }
+
+        /* 수정 모달 */
+        #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px; }
+        #edit-modal.open { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0 20px; padding-top: 15px; border-top: 1px solid #eee; }
+        .modal-field { display: flex; flex-direction: column; margin-bottom: 10px; }
+        .modal-field label { font-weight: bold; margin-bottom: 5px; font-size: 12px; color: #666; }
         .score-item { display: flex; align-items: center; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 6px; }
-        .score-item label { margin: 0; flex: 1; }
-        .score-item input { width: 60px; text-align: center; }
+        .score-item label { margin: 0; flex: 1; font-size: 14px; }
+        .score-item input { width: 70px; text-align: center; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-actions button { flex: 1; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .modal-actions button:disabled { opacity: 0.6; cursor: default; }
+        #save-edit-btn { background: #2ecc71; }
+        #cancel-edit-btn { background: #95a5a6; }
+
+        @media (max-width: 600px) {
+            body { padding: 16px; }
+            .header h1 { font-size: 22px; }
+            .modal-row, .modal-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
-<body>
+<body hidden>
 
 <div class="header">
     <h1>📊 입시 리포트 관리 시스템</h1>
-    <button onclick="location.href='index.html'" style="padding: 10px 20px; cursor:pointer;">홈으로 이동</button>
+    <div class="header-actions">
+        <button type="button" id="backup-btn">💾 전체 백업</button>
+        <button type="button" id="restore-btn">📥 백업 복원</button>
+        <input type="file" id="restore-file" accept=".json,application/json" hidden>
+        <button type="button" id="home-btn">홈으로 이동</button>
+        <button type="button" id="logout-btn">로그아웃</button>
+    </div>
 </div>
 
 <div class="control-bar">
-    <input type="text" id="search-input" class="search-input" placeholder="학생 이름을 입력하세요..." onkeyup="filterData()">
-    <select id="major-filter" onchange="filterData()">
+    <input type="text" id="search-input" class="search-input" placeholder="학생 이름을 입력하세요..." aria-label="학생 이름 검색">
+    <select id="major-filter" aria-label="전공 필터">
         <option value="">모든 전공</option>
-        <option value="보컬">보컬</option><option value="드럼">드럼</option><option value="기타">기타</option>
-        <option value="베이스">베이스</option><option value="피아노">피아노</option><option value="작곡">작곡</option>
-        <option value="싱송">싱송</option><option value="미디">미디</option>
     </select>
 </div>
 
@@ -57,142 +80,307 @@
         <thead>
             <tr><th>분석일</th><th>성명</th><th>전공</th><th>목표학교</th><th>평균</th><th>관리</th></tr>
         </thead>
-        <tbody id="report-list"></tbody>
+        <tbody id="report-list">
+            <tr><td colspan="6" class="empty-row">불러오는 중...</td></tr>
+        </tbody>
     </table>
 </div>
 
 <div id="edit-modal">
     <div class="modal-content">
-        <h2 id="edit-title" style="margin-top:0;">📝 리포트 정보 및 점수 수정</h2>
-        <input type="hidden" id="edit-id">
-        <input type="hidden" id="edit-major-val">
-        
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <div class="modal-field"><label>학생 성명</label><input type="text" id="edit-name"></div>
-            <div class="modal-field"><label>목표 학교</label><input type="text" id="edit-target"></div>
+        <h2 style="margin-top:0;">📝 리포트 정보 및 점수 수정</h2>
+
+        <div class="modal-row">
+            <div class="modal-field"><label for="edit-name">학생 성명</label><input type="text" id="edit-name" maxlength="50"></div>
+            <div class="modal-field"><label for="edit-target">목표 학교</label><input type="text" id="edit-target" maxlength="100"></div>
         </div>
 
-        <h4 style="margin-bottom:5px; color:#3498db;">🎯 세부 능력치 수정</h4>
-        <div id="score-edit-grid" class="modal-grid">
-            </div>
+        <h4 style="margin-bottom:5px; color: var(--accent-color);">🎯 세부 능력치 수정</h4>
+        <div id="score-edit-grid" class="modal-grid"></div>
 
-        <div class="modal-field"><label>장점 및 보완점</label><textarea id="edit-improvement" rows="3"></textarea></div>
-        <div class="modal-field"><label>원장님 총평</label><textarea id="edit-comment" rows="3"></textarea></div>
+        <div class="modal-field"><label for="edit-improvement">장점 및 보완점</label><textarea id="edit-improvement" rows="3"></textarea></div>
+        <div class="modal-field"><label for="edit-comment">원장님 총평</label><textarea id="edit-comment" rows="3"></textarea></div>
 
-        <div style="display:flex; gap:10px; margin-top:20px;">
-            <button onclick="updateReport()" style="flex:1; background:#2ecc71; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">변경사항 저장</button>
-            <button onclick="closeEdit()" style="flex:1; background:#95a5a6; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">취소</button>
+        <div class="modal-actions">
+            <button type="button" id="save-edit-btn">변경사항 저장</button>
+            <button type="button" id="cancel-edit-btn">취소</button>
         </div>
     </div>
 </div>
 
-<script>
-    const SUPABASE_URL = "https://gnveewglucbnmuvjupst.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudmVld2dsdWNibm11dmp1cHN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3Mjk1OTgsImV4cCI6MjA4OTMwNTU5OH0.9bu4YcGX1DM4gxy1vPr2KclJV7KIhgLStLs9eEZdXuk";
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script type="module">
+import { requireAuth, logout } from './assets/js/firebase.js';
+import { listReports, updateReport, deleteReport, exportReports, upsertReports } from './assets/js/reports.js';
+import { MAJORS, getFields } from './assets/js/fields.js';
+import { escapeHtml, isValidScore, calcAverage, todayLocal } from './assets/js/utils.js';
 
-    const fieldConfigs = { 
-        vocal: ['이론', '시창', '음감', '리듬감', '발음', '악기능력', '장르이해', '나이', '톤'], 
-        instrument: ['이론', '초견능력', '리듬감', '음감', '테크닉', '나이', '장르이해', '터치/톤'] 
-    };
+await requireAuth();
 
-    let allReports = [];
+const $ = id => document.getElementById(id);
 
-    async function fetchReports() {
-        const { data, error } = await _supabase.from('entrance_reports').select('*').order('created_at', { ascending: false });
-        if (error) return;
-        allReports = data;
-        renderTable(allReports);
+let allReports = [];
+let editing = null;   // 수정 중인 리포트
+
+MAJORS.forEach(m => $('major-filter').add(new Option(m, m)));
+
+function showMessageRow(message) {
+    $('report-list').innerHTML = `<tr><td colspan="6" class="empty-row">${escapeHtml(message)}</td></tr>`;
+}
+
+async function fetchReports() {
+    try {
+        allReports = await listReports();
+        filterData();
+    } catch (err) {
+        showMessageRow("목록을 불러오지 못했습니다: " + err.message);
+    }
+}
+
+function formatAvg(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(1) : '-';
+}
+
+// DB 값은 모두 escapeHtml을 거쳐서 넣고, 버튼은 data-id로만 식별 (인라인 onclick 사용 안 함)
+function renderTable(list) {
+    if (!list.length) {
+        showMessageRow(allReports.length ? "검색 결과가 없습니다." : "저장된 리포트가 없습니다.");
+        return;
+    }
+    $('report-list').innerHTML = list.map(item => `
+        <tr>
+            <td>${escapeHtml(item.analysis_date)}</td>
+            <td><b>${escapeHtml(item.name)}</b></td>
+            <td><span class="tag">${escapeHtml(item.major)}</span></td>
+            <td>${escapeHtml(item.target_school || '-')}</td>
+            <td class="avg-cell">${formatAvg(item.average_score)}</td>
+            <td class="actions">
+                <button type="button" class="btn-view" data-action="view" data-id="${escapeHtml(item.id)}">보기</button>
+                <button type="button" class="btn-edit" data-action="edit" data-id="${escapeHtml(item.id)}">수정</button>
+                <button type="button" class="btn-del" data-action="delete" data-id="${escapeHtml(item.id)}">삭제</button>
+            </td>
+        </tr>`).join('');
+}
+
+function filterData() {
+    const search = $('search-input').value.trim().toLowerCase();
+    const major = $('major-filter').value;
+    renderTable(allReports.filter(r =>
+        (r.name || '').toLowerCase().includes(search) && (major === "" || r.major === major)));
+}
+
+$('report-list').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const item = allReports.find(r => r.id === id);
+
+    if (btn.dataset.action === 'view') {
+        location.href = `result.html?id=${encodeURIComponent(id)}`;
+    } else if (btn.dataset.action === 'edit') {
+        if (item) openEdit(item);
+    } else if (btn.dataset.action === 'delete') {
+        if (!confirm(`${item?.name ?? ''} 학생의 리포트를 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.`)) return;
+        btn.disabled = true;
+        try {
+            await deleteReport(id);
+            await fetchReports();
+        } catch (err) {
+            alert("삭제 실패: " + err.message);
+            btn.disabled = false;
+        }
+    }
+});
+
+function openEdit(item) {
+    editing = item;
+    $('edit-name').value = item.name || '';
+    $('edit-target').value = item.target_school || '';
+    $('edit-improvement').value = item.improvement || '';
+    $('edit-comment').value = item.final_comment || '';
+
+    $('score-edit-grid').innerHTML = getFields(item.major).map(f => `
+        <div class="score-item">
+            <label for="edit-score-${f.key}">${escapeHtml(f.label)}</label>
+            <input type="number" id="edit-score-${f.key}" class="score-input" data-key="${f.key}"
+                   value="${escapeHtml(item.scores?.[f.key] ?? 0)}" min="0" max="100">
+        </div>`).join('');
+
+    $('edit-modal').classList.add('open');
+}
+
+function closeEdit() {
+    $('edit-modal').classList.remove('open');
+    editing = null;
+}
+
+async function saveEdit() {
+    if (!editing) return;
+    const name = $('edit-name').value.trim();
+    if (!name) {
+        alert("학생 성명을 입력하세요.");
+        return;
     }
 
-    function renderTable(list) {
-        document.getElementById('report-list').innerHTML = list.map(item => `
-            <tr>
-                <td>${item.analysis_date}</td>
-                <td><b>${item.name}</b></td>
-                <td><span class="tag">${item.major}</span></td>
-                <td>${item.target_school || '-'}</td>
-                <td style="color:#e74c3c; font-weight:800;">${item.average_score}</td>
-                <td>
-                    <button class="btn-view" onclick="viewReport('${item.id}', ${JSON.stringify(item.scores).replace(/"/g, '&quot;')}, '${item.name}', '${item.major}', '${item.age}', '${item.analysis_date}')">보기</button>
-                    <button class="btn-edit" onclick='openEdit(${JSON.stringify(item).replace(/'/g, "&apos;")})'>수정</button>
-                    <button class="btn-del" onclick="deleteReport('${item.id}')">삭제</button>
-                </td>
-            </tr>`).join('');
+    const fields = getFields(editing.major);
+    const newScores = {};
+    for (const f of fields) {
+        const input = $(`edit-score-${f.key}`);
+        const n = Number(input.value);
+        if (input.value.trim() === '' || !isValidScore(n)) {
+            alert(`[${f.label}] 0~100 사이의 숫자를 입력해 주세요.`);
+            input.focus();
+            return;
+        }
+        newScores[f.key] = n;
     }
 
-    function openEdit(item) {
-        document.getElementById('edit-id').value = item.id;
-        document.getElementById('edit-name').value = item.name;
-        document.getElementById('edit-target').value = item.target_school || '';
-        document.getElementById('edit-improvement').value = item.improvement || '';
-        document.getElementById('edit-comment').value = item.final_comment || '';
-        document.getElementById('edit-major-val').value = item.major;
-
-        // 전공별 점수 필드 생성
-        const isVocalGroup = (item.major === '보컬' || item.major === '싱송');
-        const labels = isVocalGroup ? fieldConfigs.vocal : fieldConfigs.instrument;
-        const scoreGrid = document.getElementById('score-edit-grid');
-        scoreGrid.innerHTML = '';
-
-        labels.forEach((label, idx) => {
-            const key = String.fromCharCode(97 + idx); // a, b, c...
-            const val = item.scores[key] || 0;
-            scoreGrid.innerHTML += `
-                <div class="score-item">
-                    <label>${label}</label>
-                    <input type="number" class="score-input" data-key="${key}" value="${val}" min="0" max="100">
-                </div>`;
-        });
-
-        document.getElementById('edit-modal').style.display = 'flex';
-    }
-
-    async function updateReport() {
-        const id = document.getElementById('edit-id').value;
-        const scoreInputs = document.querySelectorAll('.score-input');
-        const newScores = {};
-        let sum = 0;
-
-        scoreInputs.forEach(input => {
-            const val = Number(input.value);
-            newScores[input.dataset.key] = val;
-            sum += val;
-        });
-
-        const newAvg = (sum / scoreInputs.length).toFixed(1);
-
-        const updateData = {
-            name: document.getElementById('edit-name').value,
-            target_school: document.getElementById('edit-target').value,
-            improvement: document.getElementById('edit-improvement').value,
-            final_comment: document.getElementById('edit-comment').value,
+    const btn = $('save-edit-btn');
+    btn.disabled = true;
+    try {
+        await updateReport(editing.id, {
+            name,
+            target_school: $('edit-target').value.trim(),
+            improvement: $('edit-improvement').value,
+            final_comment: $('edit-comment').value,
             scores: newScores,
-            average_score: newAvg
-        };
+            average_score: calcAverage(newScores, fields)
+        });
+        alert("수정 및 점수 재계산이 완료되었습니다.");
+        closeEdit();
+        await fetchReports();
+    } catch (err) {
+        alert("저장 실패: " + err.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
 
-        const { error } = await _supabase.from('entrance_reports').update(updateData).eq('id', id);
-        if (error) alert("실패: " + error.message);
-        else { alert("수정 및 점수 재계산이 완료되었습니다."); closeEdit(); fetchReports(); }
+// 전체 리포트를 JSON 파일로 내려받기 (Firestore 자동 백업은 유료 플랜 전용이라 수동 백업용)
+async function downloadBackup() {
+    const btn = $('backup-btn');
+    btn.disabled = true;
+    try {
+        const reports = await exportReports();
+        const backup = { exported_at: new Date().toISOString(), count: reports.length, reports };
+        const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `entrance_reports-${todayLocal()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        alert("백업 실패: " + err.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// ── 백업 복원: 백업 JSON(직접 고친 것 포함)을 올리면 추가·변경된 리포트만 반영 ──
+const TEXT_FIELDS = ['name', 'age', 'major', 'analysis_date', 'target_school', 'improvement', 'final_comment'];
+
+// 저장 가능한 필드만 골라내고 점수는 숫자로, 평균은 점수로 다시 계산. 문제가 있으면 오류 메시지를 throw
+function normalizeForRestore(r, index) {
+    const where = `${index + 1}번째 리포트(${r?.name ?? '이름 없음'})`;
+    if (!r || typeof r.id !== 'string' || !r.id) throw new Error(`${where}: id가 없습니다.`);
+    if (typeof r.name !== 'string' || !r.name.trim() || r.name.length > 50) throw new Error(`${where}: 이름은 1~50자여야 합니다.`);
+    if (!MAJORS.includes(r.major)) throw new Error(`${where}: 알 수 없는 전공 "${r.major}"`);
+    if (!r.scores || typeof r.scores !== 'object') throw new Error(`${where}: scores가 없습니다.`);
+
+    const fields = getFields(r.major);
+    const scores = {};
+    for (const f of fields) {
+        const n = Number(r.scores[f.key] ?? 0);
+        if (!isValidScore(n)) throw new Error(`${where}: [${f.label}] 점수 "${r.scores[f.key]}"가 0~100 범위가 아닙니다.`);
+        scores[f.key] = n;
     }
 
-    function filterData() {
-        const search = document.getElementById('search-input').value.toLowerCase();
-        const major = document.getElementById('major-filter').value;
-        const filtered = allReports.filter(r => r.name.toLowerCase().includes(search) && (major === "" || r.major === major));
-        renderTable(filtered);
+    const report = { id: r.id, created_at: r.created_at ?? null };
+    for (const k of TEXT_FIELDS) report[k] = String(r[k] ?? '');
+    report.name = report.name.trim();
+    report.scores = scores;
+    report.average_score = calcAverage(scores, fields);
+    return report;
+}
+
+// 변경 여부 비교용 (날짜·필드 순서 차이는 무시)
+function comparable(r) {
+    const fields = getFields(r.major);
+    return JSON.stringify([
+        ...TEXT_FIELDS.map(k => String(r[k] ?? '')),
+        fields.map(f => Number(r.scores?.[f.key] ?? 0)),
+        Number(r.average_score)
+    ]);
+}
+
+async function restoreBackup(file) {
+    let incoming;
+    try {
+        const json = JSON.parse(await file.text());
+        const list = Array.isArray(json) ? json : json.reports;
+        if (!Array.isArray(list)) throw new Error('백업 파일 형식이 아닙니다. (reports 목록 없음)');
+        incoming = list.map(normalizeForRestore);
+        const ids = new Set();
+        for (const r of incoming) {
+            if (ids.has(r.id)) throw new Error(`id가 중복됩니다: ${r.id}`);
+            ids.add(r.id);
+        }
+    } catch (err) {
+        alert("복원 파일 오류: " + err.message);
+        return;
     }
 
-    function viewReport(id, scores, name, major, age, date) {
-        localStorage.setItem("clientData", JSON.stringify({ name, major, age, date }));
-        localStorage.setItem("myData", JSON.stringify(scores));
-        location.href = `result.html?id=${id}`;
+    const current = new Map(allReports.map(r => [r.id, r]));
+    const added = incoming.filter(r => !current.has(r.id));
+    const changed = incoming.filter(r => current.has(r.id) && comparable(current.get(r.id)) !== comparable(r));
+    const targets = [...added, ...changed];
+
+    if (!targets.length) {
+        alert(`변경된 내용이 없습니다. (파일 ${incoming.length}건 모두 현재와 같음)`);
+        return;
     }
 
-    function closeEdit() { document.getElementById('edit-modal').style.display = 'none'; }
-    async function deleteReport(id) { if(confirm("삭제하시겠습니까?")) { await _supabase.from('entrance_reports').delete().eq('id', id); fetchReports(); } }
+    const preview = changed.slice(0, 10).map(r => `  · ${r.name} (${r.major}, ${r.analysis_date})`).join('\n');
+    const message = [
+        `파일 ${incoming.length}건 중`,
+        `  새로 추가: ${added.length}건`,
+        `  변경: ${changed.length}건`,
+        `  변경 없음: ${incoming.length - targets.length}건 (건너뜀)`,
+        changed.length ? `\n변경되는 리포트:\n${preview}${changed.length > 10 ? `\n  … 외 ${changed.length - 10}건` : ''}` : '',
+        `\n파일에 없는 리포트는 삭제되지 않습니다. 진행할까요?`
+    ].join('\n');
+    if (!confirm(message)) return;
 
-    fetchReports();
+    const btn = $('restore-btn');
+    btn.disabled = true;
+    try {
+        await upsertReports(targets);
+        alert(`복원 완료: 추가 ${added.length}건, 변경 ${changed.length}건`);
+        await fetchReports();
+    } catch (err) {
+        alert("복원 실패: " + err.message);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+$('backup-btn').addEventListener('click', downloadBackup);
+$('restore-btn').addEventListener('click', () => $('restore-file').click());
+$('restore-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';   // 같은 파일을 다시 골라도 change가 발생하도록
+    if (file) restoreBackup(file);
+});
+$('search-input').addEventListener('input', filterData);
+$('major-filter').addEventListener('change', filterData);
+$('save-edit-btn').addEventListener('click', saveEdit);
+$('cancel-edit-btn').addEventListener('click', closeEdit);
+$('edit-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEdit(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEdit(); });
+$('home-btn').addEventListener('click', () => location.href = 'index.html');
+$('logout-btn').addEventListener('click', logout);
+
+fetchReports();
 </script>
 </body>
 </html>

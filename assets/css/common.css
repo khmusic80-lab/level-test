@@ -1,0 +1,135 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+:root {
+    --primary-color: #2c3e50;
+    --primary-hover: #1a252f;
+    --accent-color: #3498db;
+    --danger-color: #e74c3c;
+    --muted-color: #7f8c8d;
+    --bg-color: #f4f7fa;
+    --border-color: #dcdde1;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Pretendard', -apple-system, sans-serif !important;
+}
+
+/* 로그인 확인 전까지 body를 숨길 때 사용 */
+[hidden] { display: none !important; }
+
+body {
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--primary-color);
+}
+
+/* index / test / login: 화면 가운데 카드 레이아웃 */
+body.centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.header-tag {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-color);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.card h2 {
+    margin: 0 0 30px 0;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.field { text-align: left; margin-bottom: 18px; }
+
+.field label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted-color);
+    margin-bottom: 6px;
+    font-weight: 700;
+    padding-left: 2px;
+}
+
+.field input, .field select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 15px;
+    background-color: #fff;
+    transition: all 0.2s;
+    display: block;
+    outline: none;
+    font-weight: 500;
+}
+
+.field input:focus, .field select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.field select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 14px;
+    cursor: pointer;
+}
+
+.btn-group { margin-top: 25px; display: flex; flex-direction: column; gap: 10px; }
+
+.btn {
+    padding: 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 800;
+    width: 100%;
+    transition: 0.2s;
+}
+.btn:disabled { opacity: 0.6; cursor: default; }
+
+.btn-primary { background: var(--primary-color); color: white; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); }
+
+.btn-outline {
+    background: transparent;
+    color: var(--muted-color);
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+}
+.btn-outline:hover { background: #f8f9fa; color: var(--primary-color); border-color: var(--primary-color); }
+
+.link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.footer-text { margin-top: 25px; font-size: 12px; color: #bdc3c7; font-weight: 500; }
