@@ -42,6 +42,9 @@
         .score-item { display: flex; align-items: center; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 6px; }
         .score-item label { margin: 0; flex: 1; font-size: 14px; }
         .score-item input { width: 70px; text-align: center; }
+        #edit-modal .invalid { border-color: var(--danger-color); }
+        .edit-error { color: var(--danger-color); font-size: 13px; font-weight: 600; margin-top: 12px; }
+        .edit-error:empty { display: none; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
         .modal-actions button { flex: 1; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .modal-actions button:disabled { opacity: 0.6; cursor: default; }
@@ -87,8 +90,8 @@
 </div>
 
 <div id="edit-modal">
-    <div class="modal-content">
-        <h2 style="margin-top:0;">📝 리포트 정보 및 점수 수정</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+        <h2 id="edit-title" style="margin-top:0;">📝 리포트 정보 및 점수 수정</h2>
 
         <div class="modal-row">
             <div class="modal-field"><label for="edit-name">학생 성명</label><input type="text" id="edit-name" maxlength="50"></div>
@@ -100,6 +103,7 @@
 
         <div class="modal-field"><label for="edit-improvement">장점 및 보완점</label><textarea id="edit-improvement" rows="3"></textarea></div>
         <div class="modal-field"><label for="edit-comment">원장님 총평</label><textarea id="edit-comment" rows="3"></textarea></div>
+        <div id="edit-error" class="edit-error" role="alert"></div>
 
         <div class="modal-actions">
             <button type="button" id="save-edit-btn">변경사항 저장</button>
@@ -112,7 +116,7 @@
 import { requireAuth, logout } from './assets/js/firebase.js';
 import { listReports, updateReport, deleteReport, exportReports, upsertReports } from './assets/js/reports.js';
 import { MAJORS, getFields } from './assets/js/fields.js';
-import { escapeHtml, isValidScore, calcAverage, todayLocal } from './assets/js/utils.js';
+import { escapeHtml, isValidScore, calcAverage, todayLocal, toast } from './assets/js/utils.js';
 
 await requireAuth();
 
@@ -120,6 +124,7 @@ const $ = id => document.getElementById(id);
 
 let allReports = [];
 let editing = null;   // 수정 중인 리포트
+let editSnapshot = null;   // 수정 창을 열었을 때의 입력값 (닫을 때 변경 여부 확인용)
 
 MAJORS.forEach(m => $('major-filter').add(new Option(m, m)));
 
@@ -185,8 +190,9 @@ $('report-list').addEventListener('click', async e => {
         try {
             await deleteReport(id);
             await fetchReports();
+            toast("리포트를 삭제했습니다.");
         } catch (err) {
-            alert("삭제 실패: " + err.message);
+            toast("삭제 실패: " + err.message, 'error');
             btn.disabled = false;
         }
     }
@@ -199,38 +205,49 @@ function openEdit(item) {
     $('edit-improvement').value = item.improvement || '';
     $('edit-comment').value = item.final_comment || '';
 
-    $('score-edit-grid').innerHTML = getFields(item.major).map(f => `
+    $('score-edit-grid').innerHTML = getFields(item.major, item.scores).map(f => `
         <div class="score-item">
             <label for="edit-score-${f.key}">${escapeHtml(f.label)}</label>
             <input type="number" id="edit-score-${f.key}" class="score-input" data-key="${f.key}"
                    value="${escapeHtml(item.scores?.[f.key] ?? 0)}" min="0" max="100">
         </div>`).join('');
 
+    $('edit-error').textContent = '';
     $('edit-modal').classList.add('open');
+    editSnapshot = editValues();
+    $('edit-name').focus();
 }
 
-function closeEdit() {
+const editValues = () => JSON.stringify(
+    [...$('edit-modal').querySelectorAll('input, textarea')].map(el => el.value));
+
+// 바깥 클릭·ESC·취소로 닫을 때 수정한 내용이 있으면 확인
+function closeEdit(force = false) {
+    if (!editing) return;
+    if (!force && editValues() !== editSnapshot && !confirm("수정한 내용이 저장되지 않습니다. 닫을까요?")) return;
     $('edit-modal').classList.remove('open');
     editing = null;
+}
+
+function showEditError(input, message) {
+    $('edit-modal').querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+    input.classList.add('invalid');
+    $('edit-error').textContent = message;
+    input.focus();
 }
 
 async function saveEdit() {
     if (!editing) return;
     const name = $('edit-name').value.trim();
-    if (!name) {
-        alert("학생 성명을 입력하세요.");
-        return;
-    }
+    if (!name) return showEditError($('edit-name'), "학생 성명을 입력하세요.");
 
-    const fields = getFields(editing.major);
+    const fields = getFields(editing.major, editing.scores);
     const newScores = {};
     for (const f of fields) {
         const input = $(`edit-score-${f.key}`);
         const n = Number(input.value);
         if (input.value.trim() === '' || !isValidScore(n)) {
-            alert(`[${f.label}] 0~100 사이의 숫자를 입력해 주세요.`);
-            input.focus();
-            return;
+            return showEditError(input, `[${f.label}] 0~100 사이의 숫자를 입력해 주세요.`);
         }
         newScores[f.key] = n;
     }
@@ -246,11 +263,11 @@ async function saveEdit() {
             scores: newScores,
             average_score: calcAverage(newScores, fields)
         });
-        alert("수정 및 점수 재계산이 완료되었습니다.");
-        closeEdit();
+        closeEdit(true);
+        toast("저장했습니다. 평균 점수도 다시 계산되었습니다.");
         await fetchReports();
     } catch (err) {
-        alert("저장 실패: " + err.message);
+        toast("저장 실패: " + err.message, 'error');
     } finally {
         btn.disabled = false;
     }
@@ -287,7 +304,7 @@ function normalizeForRestore(r, index) {
     if (!MAJORS.includes(r.major)) throw new Error(`${where}: 알 수 없는 전공 "${r.major}"`);
     if (!r.scores || typeof r.scores !== 'object') throw new Error(`${where}: scores가 없습니다.`);
 
-    const fields = getFields(r.major);
+    const fields = getFields(r.major, r.scores);
     const scores = {};
     for (const f of fields) {
         const n = Number(r.scores[f.key] ?? 0);
@@ -305,7 +322,7 @@ function normalizeForRestore(r, index) {
 
 // 변경 여부 비교용 (날짜·필드 순서 차이는 무시)
 function comparable(r) {
-    const fields = getFields(r.major);
+    const fields = getFields(r.major, r.scores);
     return JSON.stringify([
         ...TEXT_FIELDS.map(k => String(r[k] ?? '')),
         fields.map(f => Number(r.scores?.[f.key] ?? 0)),
@@ -374,7 +391,12 @@ $('restore-file').addEventListener('change', e => {
 $('search-input').addEventListener('input', filterData);
 $('major-filter').addEventListener('change', filterData);
 $('save-edit-btn').addEventListener('click', saveEdit);
-$('cancel-edit-btn').addEventListener('click', closeEdit);
+$('cancel-edit-btn').addEventListener('click', () => closeEdit());
+$('edit-modal').addEventListener('input', e => {
+    if (!e.target.classList.contains('invalid')) return;
+    e.target.classList.remove('invalid');
+    $('edit-error').textContent = '';
+});
 $('edit-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEdit(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEdit(); });
 $('home-btn').addEventListener('click', () => location.href = 'index.html');

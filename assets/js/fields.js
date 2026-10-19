@@ -4,9 +4,33 @@ export const MAJORS = ['보컬', '드럼', '베이스', '기타', '피아노', '
 
 const VOCAL_MAJORS = ['보컬', '싱송'];
 
-// key는 DB에 저장되는 점수 키입니다. 기존 데이터와 맞물려 있으므로 key를 바꾸거나 재배치하지 마세요.
-// 항목을 추가할 때는 끝에 새 key로 붙이세요.
+// key는 DB에 저장되는 점수 키입니다. 저장된 데이터와 맞물려 있으므로 key를 바꾸거나 재사용하지 마세요.
+// 항목 구성을 바꿀 때는 새 key를 쓰고, 기존 항목 세트는 LEGACY_FIELDS로 옮겨 예전 리포트가 그대로 보이게 하세요.
 const FIELDS = {
+    vocal: [
+        { key: 'tone', label: '톤' },
+        { key: 'pitch_rhythm', label: '음정/박자' },
+        { key: 'technique', label: '테크닉' },
+        { key: 'instrument', label: '악기능력' },
+        { key: 'reading', label: '악보리딩' },
+        { key: 'knowledge', label: '사전지식(나이고려)' },
+        { key: 'theory', label: '이론' },
+        { key: 'attitude', label: '의지/적극성' }
+    ],
+    instrument: [
+        { key: 'tone', label: '터치/톤' },
+        { key: 'technique', label: '테크닉' },
+        { key: 'groove', label: '박자/그루브' },
+        { key: 'genre', label: '장르이해' },
+        { key: 'reading', label: '악보리딩' },
+        { key: 'knowledge', label: '사전지식(나이고려)' },
+        { key: 'theory', label: '이론' },
+        { key: 'attitude', label: '의지/적극성' }
+    ]
+};
+
+// 2026-10 항목 개편 이전에 저장된 리포트의 평가 항목 (예전 리포트 조회·수정용)
+const LEGACY_FIELDS = {
     vocal: [
         { key: 'a', label: '이론' },
         { key: 'b', label: '시창' },
@@ -30,17 +54,24 @@ const FIELDS = {
     ]
 };
 
-export function getFields(major) {
-    return VOCAL_MAJORS.includes(major) ? FIELDS.vocal : FIELDS.instrument;
+const CURRENT_KEYS = new Set([...FIELDS.vocal, ...FIELDS.instrument].map(f => f.key));
+
+// 저장된 점수(scores)를 넘기면 그 점수가 입력될 당시의 항목 세트를 돌려줌 (예전 키만 있으면 LEGACY_FIELDS).
+// 새로 점수를 입력할 때는 scores 없이 호출하세요.
+export function getFields(major, scores) {
+    const keys = Object.keys(scores ?? {});
+    const set = keys.length && !keys.some(k => CURRENT_KEYS.has(k)) ? LEGACY_FIELDS : FIELDS;
+    return VOCAL_MAJORS.includes(major) ? set.vocal : set.instrument;
 }
 
+// 보컬 외 전공은 '실용음악과 입시생 필수 뮤지션' 목록 기준 (1차 필수 청취 → 추가로 꼭 들어야 할 뮤지션 순)
 export const ARTISTS = {
     '보컬': ['Beyoncé', 'Adele', 'Bruno Mars', 'Demi Lovato', 'Michael Bublé', 'Ariana Grande', 'Tori Kelly', 'Jacob Collier', 'John Legend', 'Jamie Cullum', 'Charlie Puth', 'Justin Bieber', 'Justin Timberlake', '박효신', '김범수', '나얼', '박정현', '이소라', '성시경', '정승환', '김동률', '미노이'],
-    '싱송': ['Ed Sheeran', 'John Mayer', '선우정아', '윤종신', '유재하', '유희열', '윤상', '안예은', '윤딴딴', '이무진', '볼빨간사춘기', '아이유', 'DEAN', '이적', '장필순'],
-    '드럼': ['Steve Gadd', 'Dave Weckl', 'Kaz Rodriguez', 'Aaron Spears', 'Robert "Sput" Searight', '김승호', '은아경', '조찬우'],
-    '베이스': ['Jaco Pastorius', 'Michael League', 'Marcus Miller', 'Nathan East', 'Richard Bona', 'Esperanza Spalding', '구본암', '로비크', '최인성'],
-    '기타': ['Mark Lettieri', 'Pat Metheny', 'Norman Brown', 'John Mayer', 'Michael Landau', 'Scott Henderson', 'Chuck Loeb', 'Paul Jackson Jr.', '적재'],
-    '피아노': ['Oscar Peterson', 'Chick Corea', 'Keith Jarrett', 'Cory Henry', 'Herbie Hancock', 'Bill Evans', '송영주', '윤석철', '김요한'],
-    '작곡': ['Quincy Jones', 'David Foster', 'John Williams', 'Hans Zimmer', 'Ennio Morricone', 'Ryuichi Sakamoto', 'Howard Shore', '정재일', '모그'],
-    '미디': ['Avicii', 'Martin Garrix', 'Alan Walker', 'Zedd', 'Third Party', 'KSHMR', 'David Guetta', 'The Chainsmokers', 'Skrillex', 'Marshmello', 'Steve Aoki', 'Kygo', 'Mike Perry', 'Pdogg']
+    '싱송': ['Joni Mitchell', 'Carole King', 'Stevie Wonder', 'Paul Simon', 'John Mayer', 'Billie Eilish', 'James Taylor', 'Nick Drake', 'Jeff Buckley', 'Norah Jones', 'Alicia Keys', 'Ed Sheeran', '윤상', '유희열', '아이유', '김동률'],
+    '드럼': ['Steve Gadd', 'Vinnie Colaiuta', 'Dave Weckl', 'Jeff Porcaro', 'Tony Williams', 'Steve Jordan', 'Buddy Rich', 'Elvin Jones', 'Dennis Chambers', 'Questlove', 'Chris Dave', 'Nate Smith'],
+    '베이스': ['James Jamerson', 'Jaco Pastorius', 'Pino Palladino', 'Marcus Miller', 'Anthony Jackson', 'Paul Chambers', 'Larry Graham', 'Rocco Prestia', 'Nathan East', 'Victor Wooten', 'Richard Bona', 'Thundercat'],
+    '기타': ['Jimi Hendrix', 'Eric Clapton', 'John Scofield', 'Wes Montgomery', 'Pat Metheny', 'John Mayer', 'Jim Hall', 'George Benson', 'Allan Holdsworth', 'Mike Stern', 'Nile Rodgers', 'Cory Wong', 'Julian Lage'],
+    '피아노': ['Bill Evans', 'Oscar Peterson', 'Bud Powell', 'Herbie Hancock', 'Chick Corea', 'McCoy Tyner', 'Thelonious Monk', 'Wynton Kelly', 'Keith Jarrett', 'Brad Mehldau', 'Robert Glasper', 'Hiromi'],
+    '작곡': ['Stevie Wonder', 'The Beatles', 'Billy Joel', 'David Foster', 'Quincy Jones', 'Chick Corea', 'Duke Ellington', 'Steely Dan', 'Jacob Collier', 'Ryuichi Sakamoto', 'Max Martin', 'Ludovico Einaudi'],
+    '미디': ['Quincy Jones', 'Timbaland', 'Pharrell Williams', 'Dr. Dre', 'Max Martin', 'Finneas', 'J Dilla', 'Kanye West', 'The Neptunes', 'Rick Rubin', 'Metro Boomin', 'Skrillex', 'Nigel Godrich']
 };

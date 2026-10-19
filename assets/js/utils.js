@@ -40,6 +40,32 @@ export function saveDraft(draft) {
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
 }
 
-export function clearDraft() {
-    sessionStorage.removeItem(DRAFT_KEY);
+// 화면 아래에 잠깐 떴다 사라지는 알림 (흐름을 끊는 alert 대신 사용)
+export function toast(message, type = 'info') {
+    let box = document.getElementById('toast');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'toast';
+        box.setAttribute('role', 'status');
+        box.setAttribute('aria-live', 'polite');
+        document.body.appendChild(box);
+    }
+    box.textContent = message;
+    box.className = `toast show ${type}`;
+    clearTimeout(box.hideTimer);
+    box.hideTimer = setTimeout(() => box.classList.remove('show'), type === 'error' ? 4000 : 2500);
+}
+
+// .field 안의 입력칸 아래에 오류 문구 표시. message가 비어 있으면 지움
+export function setFieldError(input, message) {
+    const field = input.closest('.field');
+    let box = field.querySelector('.field-error');
+    if (!box) {
+        box = document.createElement('div');
+        box.className = 'field-error';
+        field.appendChild(box);
+    }
+    box.textContent = message || '';
+    field.classList.toggle('invalid', !!message);
+    input.setAttribute('aria-invalid', message ? 'true' : 'false');
 }

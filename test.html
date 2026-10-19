@@ -46,7 +46,11 @@
             margin: 0;
         }
 
-        #submit-btn { margin-top: 40px; padding: 16px; font-size: 16px; }
+        .progress-text { margin-top: 28px; font-size: 13px; font-weight: 700; color: var(--muted-color); }
+        .progress-text.complete { color: var(--accent-color); }
+
+        .btn-group { margin-top: 16px; }
+        #submit-btn { padding: 16px; font-size: 16px; }
 
         @media (max-width: 480px) {
             .card { padding: 32px 20px; }
@@ -58,75 +62,160 @@
 
 <div class="card">
     <div class="header-tag">LEVEL TEST</div>
-    <h2>테스트 결과 입력</h2>
+    <h2 id="title">테스트 결과 입력</h2>
     <div id="display-info" class="student-info-box"></div>
 
-    <div id="dynamic-fields"></div>
-
-    <button type="button" id="submit-btn" class="btn btn-primary">최종 리포트 생성하기</button>
-    <div class="footer-text">각 항목은 0~100점 사이로 평가해 주세요.</div>
+    <form id="score-form" novalidate>
+        <div id="dynamic-fields"></div>
+        <div id="progress" class="progress-text" aria-live="polite"></div>
+        <div class="btn-group">
+            <button type="submit" id="submit-btn" class="btn btn-primary">최종 리포트 생성하기</button>
+            <button type="button" id="back-btn" class="btn btn-outline">← 학생 정보 수정</button>
+        </div>
+    </form>
 </div>
 
 <script type="module">
 import { requireAuth } from './assets/js/firebase.js';
+import { getReport, updateReport } from './assets/js/reports.js';
 import { getFields } from './assets/js/fields.js';
-import { escapeHtml, isValidScore, loadDraft, saveDraft } from './assets/js/utils.js';
+import { escapeHtml, isValidScore, calcAverage, loadDraft, saveDraft, setFieldError, toast } from './assets/js/utils.js';
 
 await requireAuth();
 
+const $ = id => document.getElementById(id);
+
+// 저장된 리포트의 점수 수정 모드: result.html의 "점수 다시 입력"(?id=)
+// 또는 첫 저장 후 브라우저 뒤로가기로 돌아온 경우(임시 데이터에 reportId만 남아 있음)
 const draft = loadDraft();
-if (!draft) {
+const editId = new URLSearchParams(location.search).get('id') || draft?.reportId || null;
+
+if (editId) {
+    let report = null;
+    try {
+        report = await getReport(editId);
+    } catch (err) {
+        alert("리포트를 불러오지 못했습니다: " + err.message);
+    }
+    if (report) init(report.name, report.major, report.scores);
+    else location.replace("admin.html");
+} else if (draft?.name) {
+    init(draft.name, draft.major, draft.scoreInput ?? draft.scores);
+} else {
     alert("인적사항 데이터가 없습니다. 첫 페이지로 이동합니다.");
     location.replace("index.html");
-} else {
-    init(draft);
 }
 
-function init(draft) {
-    document.getElementById('display-info').textContent = `${draft.name} 학생 · ${draft.major}`;
+function init(name, major, initialScores) {
+    $('display-info').textContent = `${name} 학생 · ${major}`;
+    if (editId) {
+        document.title = "경희실용음악학원 - 점수 수정";
+        $('title').textContent = "점수 수정";
+        $('submit-btn').textContent = "점수 저장하고 리포트 보기";
+        $('back-btn').textContent = "← 리포트로 돌아가기";
+    }
 
-    const fields = getFields(draft.major);
-    const inputOf = f => document.getElementById(`score-${f.key}`);
+    // 저장된 리포트 수정 시에는 그 리포트의 항목 그대로, 새 입력은 현재 항목으로
+    const fields = getFields(major, editId ? initialScores : undefined);
+    const inputOf = f => $(`score-${f.key}`);
 
-    document.getElementById('dynamic-fields').innerHTML = fields.map(f => `
+    $('dynamic-fields').innerHTML = fields.map(f => `
         <div class="field">
             <label for="score-${f.key}">${escapeHtml(f.label)}</label>
-            <input type="number" id="score-${f.key}" min="0" max="100" inputmode="decimal" placeholder="점수 입력">
+            <input type="number" id="score-${f.key}" min="0" max="100" inputmode="decimal" placeholder="0~100" enterkeyhint="next">
         </div>
     `).join('');
 
-    // 결과 화면에서 뒤로 왔을 때 입력했던 점수 복원
-    if (draft.scores) {
-        fields.forEach(f => {
-            if (draft.scores[f.key] != null) inputOf(f).value = draft.scores[f.key];
-        });
+    // 이전에 입력했던 점수 복원
+    fields.forEach(f => {
+        if (initialScores?.[f.key] != null) inputOf(f).value = initialScores[f.key];
+    });
+    const initialValues = JSON.stringify(fields.map(f => inputOf(f).value));
+    inputOf(fields.at(-1)).setAttribute('enterkeyhint', 'done');
+
+    // 빈 값이면 '', 잘못된 값이면 오류 문구, 정상이면 null
+    const problemOf = input => {
+        const raw = input.value.trim();
+        if (raw === '') return '';
+        return isValidScore(Number(raw)) ? null : '0~100 사이로 입력하세요.';
+    };
+
+    function updateProgress() {
+        const done = fields.filter(f => problemOf(inputOf(f)) === null);
+        const scores = Object.fromEntries(done.map(f => [f.key, Number(inputOf(f).value)]));
+        $('progress').textContent = done.length === fields.length
+            ? `${fields.length}개 항목 입력 완료 · 평균 ${calcAverage(scores, fields).toFixed(1)}점`
+            : `${done.length} / ${fields.length} 항목 입력`;
+        $('progress').classList.toggle('complete', done.length === fields.length);
     }
 
-    document.getElementById('submit-btn').addEventListener('click', () => {
-        const scores = {};
-        let hasEmpty = false;
+    fields.forEach((f, i) => {
+        const input = inputOf(f);
+        // 입력하는 동안: 범위를 벗어나면 바로 알려주고, 고치면 바로 지움
+        input.addEventListener('input', () => {
+            setFieldError(input, problemOf(input) || '');
+            updateProgress();
+        });
+        // Enter: 다음 칸으로 이동, 마지막 칸에서는 제출
+        input.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' || e.isComposing || i === fields.length - 1) return;
+            e.preventDefault();
+            inputOf(fields[i + 1]).focus();
+        });
+    });
+    updateProgress();
 
+    // 지금까지 입력한 값 (빈칸·잘못된 값은 제외)
+    const currentInput = () => Object.fromEntries(fields
+        .filter(f => problemOf(inputOf(f)) === null)
+        .map(f => [f.key, Number(inputOf(f).value)]));
+
+    $('back-btn').addEventListener('click', () => {
+        if (editId) {
+            const changed = JSON.stringify(fields.map(f => inputOf(f).value)) !== initialValues;
+            if (changed && !confirm("수정한 점수가 저장되지 않습니다. 리포트로 돌아갈까요?")) return;
+            location.href = `result.html?id=${encodeURIComponent(editId)}`;
+        } else {
+            // 입력하던 점수는 임시 저장해 두고 학생 정보 화면으로
+            saveDraft({ ...loadDraft(), scoreInput: currentInput() });
+            location.href = "index.html?resume";
+        }
+    });
+
+    $('score-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        let firstInvalid = null;
         for (const f of fields) {
             const input = inputOf(f);
-            const raw = input.value.trim();
-            if (raw === '') {
-                hasEmpty = true;
-                scores[f.key] = 0;
-                continue;
-            }
-            const n = Number(raw);
-            if (!isValidScore(n)) {
-                alert(`[${f.label}] 0~100 사이의 숫자를 입력해 주세요.`);
-                input.focus();
-                return;
-            }
-            scores[f.key] = n;
+            const problem = problemOf(input);
+            if (problem === null) continue;
+            setFieldError(input, problem || '점수를 입력하세요.');
+            firstInvalid ??= input;
+        }
+        if (firstInvalid) {
+            firstInvalid.focus();
+            return;
         }
 
-        if (hasEmpty && !confirm("입력되지 않은 항목이 있습니다. 0점으로 처리하고 진행할까요?")) return;
+        const scores = currentInput();
+        if (!editId) {
+            const { scoreInput, ...rest } = loadDraft();
+            saveDraft({ ...rest, scores });
+            location.href = "result.html";
+            return;
+        }
 
-        saveDraft({ ...draft, scores });
-        location.href = "result.html";
+        const btn = $('submit-btn');
+        btn.disabled = true;
+        btn.textContent = "저장 중...";
+        try {
+            await updateReport(editId, { scores, average_score: calcAverage(scores, fields) });
+            location.href = `result.html?id=${encodeURIComponent(editId)}`;
+        } catch (err) {
+            toast("저장 실패: " + err.message, 'error');
+            btn.disabled = false;
+            btn.textContent = "점수 저장하고 리포트 보기";
+        }
     });
 }
 </script>

@@ -44,10 +44,10 @@
 
         .print-text-area { display: none; text-align: left; padding: 20px; font-size: 15px; line-height: 1.8; white-space: pre-wrap; word-break: break-all; min-height: 150px; border: 1px solid var(--border-color); }
 
-        /* 차트 레이아웃 */
-        #charts { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 30px 0; }
-        .chart-box { text-align: center; flex: 1; min-width: 240px; }
-        canvas { max-width: 280px !important; max-height: 280px !important; margin: 0 auto; }
+        /* 차트: 학생 점수와 전공 평균을 한 차트에 겹쳐서 비교 */
+        .chart-section { text-align: center; margin: 30px 0; }
+        .chart-box { max-width: 420px; margin: 0 auto; }
+        .chart-note { font-size: 13px; color: var(--muted-color); margin-top: 6px; }
 
         .recommend-cell { padding: 20px; text-align: left; background: #fafafa; }
         .artist-tag { display: inline-block; background: #f1f2f6; color: #2f3542; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: 600; margin: 3px; border: 1px solid #dfe4ea; }
@@ -55,11 +55,13 @@
         .academy-sign { text-align: center; margin-top: 50px; font-weight: 800; font-size: 20px; letter-spacing: 2px; }
 
         /* 버튼 설정 */
-        .button-group { margin-top: 40px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .save-status { margin-top: 40px; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted-color); }
+        .save-status.unsaved { color: #d35400; }
+        .button-group { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         .button-group button { padding: 15px 30px; border: none; color: white; border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 700; transition: 0.2s; }
         .button-group button:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
         .button-group button:disabled { opacity: 0.6; cursor: default; }
-        #back-btn { background: #95a5a6; }
+        #back-btn, #rescore-btn { background: #7f8c8d; }
         #save-only-btn { background: var(--accent-color); flex: 1; max-width: 200px; }
         #save-print-btn { background: #2ecc71; flex: 1; max-width: 250px; }
 
@@ -104,9 +106,10 @@
         </tr>
     </table>
 
-    <div id="charts">
-        <div class="chart-box"><h3>[ 능력치 분석 데이터 ]</h3><canvas id="myChart"></canvas></div>
-        <div class="chart-box"><h3 id="avg-title">[ 전공 평균 데이터 ]</h3><canvas id="avgChart"></canvas></div>
+    <div class="chart-section">
+        <h3>[ 능력치 분석 ]</h3>
+        <div class="chart-box"><canvas id="radar" role="img" aria-label="항목별 점수 레이더 차트"></canvas></div>
+        <div id="chart-note" class="chart-note"></div>
     </div>
 
     <table>
@@ -152,10 +155,12 @@
         <div class="academy-sign">경희실용음악학원</div>
     </div>
 
+    <div id="save-status" class="save-status no-print" aria-live="polite"></div>
     <div class="button-group no-print">
         <button type="button" id="back-btn">목록으로</button>
-        <button type="button" id="save-only-btn">💾 수정 내용 저장</button>
-        <button type="button" id="save-print-btn">🖨️ 저장 후 리포트 인쇄</button>
+        <button type="button" id="rescore-btn">점수 다시 입력</button>
+        <button type="button" id="save-only-btn">💾 저장하기</button>
+        <button type="button" id="save-print-btn">🖨️ 저장 후 인쇄</button>
     </div>
 </div>
 
@@ -163,7 +168,7 @@
 import { requireAuth } from './assets/js/firebase.js';
 import { getReport, createReport, updateReport, listReportsByMajor } from './assets/js/reports.js';
 import { getFields, ARTISTS } from './assets/js/fields.js';
-import { calcAverage, loadDraft, clearDraft } from './assets/js/utils.js';
+import { calcAverage, loadDraft, saveDraft, toast } from './assets/js/utils.js';
 
 await requireAuth();
 
@@ -172,9 +177,18 @@ const $ = id => document.getElementById(id);
 // 저장 전(새 리포트)에는 null, 첫 저장 이후 또는 ?id= 로 열었을 때는 문서 id
 let reportId = new URLSearchParams(location.search).get('id');
 let report = null;
+let chart = null;
 
-const SAVE_LABEL = "💾 수정 내용 저장";
-const PRINT_LABEL = "🖨️ 저장 후 리포트 인쇄";
+const SAVE_LABEL = "💾 저장하기";
+const PRINT_LABEL = "🖨️ 저장 후 인쇄";
+
+Chart.defaults.font.family = "'Pretendard', -apple-system, sans-serif";
+
+// 장점·총평의 마지막 저장 상태. 새 리포트는 저장 전까지 항상 '저장 안 됨'
+let savedText = null;
+let savedAt = null;
+const currentText = () => JSON.stringify([$('improvement-area').value, $('comment-area').value]);
+const isDirty = () => !reportId || currentText() !== savedText;
 
 main();
 
@@ -188,6 +202,9 @@ async function main() {
     if (!report) return;
 
     render(report);
+    savedText = currentText();
+    savedAt = report.updated_at?.toDate?.() ?? null;
+    updateSaveStatus();
     renderMajorAverage(report);
 }
 
@@ -203,6 +220,11 @@ async function loadReport() {
     }
 
     const draft = loadDraft();
+    // 첫 저장 후 앞으로가기 등으로 다시 온 경우: 저장된 리포트로
+    if (draft?.reportId) {
+        location.replace(`result.html?id=${encodeURIComponent(draft.reportId)}`);
+        return null;
+    }
     if (!draft?.scores) {
         alert("입력된 테스트 데이터가 없습니다. 첫 페이지로 이동합니다.");
         location.replace("index.html");
@@ -215,8 +237,8 @@ async function loadReport() {
         analysis_date: draft.date,
         target_school: draft.targetSchool,
         scores: draft.scores,
-        improvement: "",
-        final_comment: ""
+        improvement: draft.improvement ?? "",
+        final_comment: draft.finalComment ?? ""
     };
 }
 
@@ -230,7 +252,7 @@ function render(r) {
     $('comment-area').value = r.final_comment ?? "";
     document.querySelectorAll('textarea[data-print]').forEach(syncPrintText);
 
-    const fields = getFields(r.major);
+    const fields = getFields(r.major, r.scores);
     const values = fields.map(f => Number(r.scores?.[f.key]) || 0);
 
     fields.forEach((f, idx) => {
@@ -244,8 +266,28 @@ function render(r) {
 
     $('avg').textContent = calcAverage(r.scores, fields).toFixed(1);
 
-    drawRadar('myChart', fields.map(f => f.label), values,
-        { backgroundColor: "rgba(52,152,219,0.15)", borderColor: "#3498db", borderWidth: 2 });
+    chart = new Chart($('radar'), {
+        type: 'radar',
+        data: {
+            labels: fields.map(f => f.label),
+            datasets: [{
+                label: `${r.name} 학생`, data: values, order: 0,
+                backgroundColor: "rgba(52,152,219,0.18)", borderColor: "#3498db", borderWidth: 2,
+                pointRadius: 3, pointBackgroundColor: "#3498db"
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    beginAtZero: true, max: 100,
+                    ticks: { display: false, stepSize: 20 },
+                    pointLabels: { font: { size: 13, weight: 700 }, color: "#2c3e50" }
+                }
+            },
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 14, font: { size: 13 } } } },
+            animation: false
+        }
+    });
 
     (ARTISTS[r.major] || []).forEach(name => {
         const tag = document.createElement("span");
@@ -255,39 +297,31 @@ function render(r) {
     });
 }
 
-// 같은 전공으로 저장된 다른 학생들의 항목별 평균
+// 같은 전공으로 저장된 다른 학생들의 항목별 평균을 같은 차트에 점선으로 겹쳐 그림
 async function renderMajorAverage(r) {
-    const fields = getFields(r.major);
-    let averages = [];
+    const fields = getFields(r.major, r.scores);
     try {
-        const others = (await listReportsByMajor(r.major)).filter(o => o.id !== reportId);
-        $('avg-title').textContent = others.length
-            ? `[ ${r.major} 전공 평균 · ${others.length}명 ]`
-            : `[ ${r.major} 전공 평균 · 데이터 없음 ]`;
-        if (others.length) {
-            averages = fields.map(f => {
-                const sum = others.reduce((acc, o) => acc + (Number(o.scores?.[f.key]) || 0), 0);
-                return Math.round((sum / others.length) * 10) / 10;
-            });
+        // 평가 항목이 같은 리포트끼리만 비교 (항목 개편 전 리포트는 제외)
+        const others = (await listReportsByMajor(r.major))
+            .filter(o => o.id !== reportId && getFields(o.major, o.scores) === fields);
+        if (!others.length) {
+            $('chart-note').textContent = `아직 다른 ${r.major} 전공 리포트가 없어 평균 비교는 표시되지 않습니다.`;
+            return;
         }
+        const averages = fields.map(f => {
+            const sum = others.reduce((acc, o) => acc + (Number(o.scores?.[f.key]) || 0), 0);
+            return Math.round((sum / others.length) * 10) / 10;
+        });
+        chart.data.datasets.push({
+            label: `${r.major} 전공 평균 (${others.length}명)`, data: averages, order: 1,
+            backgroundColor: "rgba(44,62,80,0.04)", borderColor: "#2c3e50", borderWidth: 1.5,
+            borderDash: [5, 5], pointRadius: 0
+        });
+        chart.update();
     } catch (err) {
         console.error(err);
-        $('avg-title').textContent = "[ 전공 평균 · 불러오기 실패 ]";
+        $('chart-note').textContent = "전공 평균을 불러오지 못했습니다.";
     }
-    drawRadar('avgChart', fields.map(f => f.label), averages,
-        { backgroundColor: "rgba(44, 62, 80, 0.05)", borderColor: "#2c3e50", borderWidth: 1, borderDash: [5, 5] });
-}
-
-function drawRadar(canvasId, labels, data, style) {
-    new Chart($(canvasId), {
-        type: 'radar',
-        data: { labels, datasets: [{ data, pointRadius: 0, ...style }] },
-        options: {
-            scales: { r: { beginAtZero: true, max: 100, ticks: { display: false } } },
-            plugins: { legend: { display: false } },
-            animation: false
-        }
-    });
 }
 
 function syncPrintText(textarea) {
@@ -295,10 +329,46 @@ function syncPrintText(textarea) {
 }
 
 document.querySelectorAll('textarea[data-print]').forEach(t =>
-    t.addEventListener('input', () => syncPrintText(t)));
+    t.addEventListener('input', () => {
+        syncPrintText(t);
+        // 저장 전 새 리포트: 점수 다시 입력 등으로 다녀와도 작성한 문장이 남도록 임시 저장
+        if (!reportId) {
+            saveDraft({ ...loadDraft(), improvement: $('improvement-area').value, finalComment: $('comment-area').value });
+        }
+        updateSaveStatus();
+    }));
+
+function formatTime(d) {
+    const pad = n => String(n).padStart(2, '0');
+    const today = new Date().toDateString() === d.toDateString();
+    return (today ? '' : `${d.getMonth() + 1}/${d.getDate()} `) + `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function updateSaveStatus() {
+    const box = $('save-status');
+    if (!report) return;
+    const dirty = isDirty();
+    box.classList.toggle('unsaved', dirty);
+    box.textContent = !reportId ? "아직 저장되지 않은 리포트입니다."
+        : dirty ? "저장하지 않은 변경사항이 있습니다."
+        : savedAt ? `✓ 저장됨 · ${formatTime(savedAt)}` : "✓ 저장됨";
+}
+
+// 저장하지 않은 내용이 있으면 페이지를 떠나기 전에 확인
+let leaving = false;
+function leaveTo(url, needConfirm = isDirty()) {
+    if (needConfirm && !confirm("저장하지 않은 내용이 있습니다. 저장하지 않고 이동할까요?")) return;
+    leaving = true;
+    location.href = url;
+}
+window.addEventListener('beforeunload', e => {
+    if (leaving || !report || !isDirty()) return;
+    e.preventDefault();
+    e.returnValue = '';
+});
 
 async function save() {
-    const fields = getFields(report.major);
+    const fields = getFields(report.major, report.scores);
     const data = {
         name: report.name ?? "",
         age: report.age ?? "",
@@ -317,8 +387,12 @@ async function save() {
         // 첫 저장: 이후 저장은 같은 문서를 수정하도록 id를 주소에 기록 (새로고침해도 중복 생성 안 됨)
         reportId = await createReport(data);
         history.replaceState(null, "", `?id=${encodeURIComponent(reportId)}`);
-        clearDraft();
+        // 학생 정보는 지우고 id만 남김: 브라우저 뒤로가기로 점수 화면에 가면 이 리포트의 점수 수정으로 열림
+        saveDraft({ reportId });
     }
+    savedText = currentText();
+    savedAt = new Date();
+    updateSaveStatus();
 }
 
 function setBusy(busy, activeBtn) {
@@ -335,10 +409,10 @@ $('save-only-btn').addEventListener('click', async e => {
     try {
         await save();
         setBusy(false);
-        alert("데이터가 성공적으로 저장되었습니다.");
+        toast("저장되었습니다.");
     } catch (err) {
         setBusy(false);
-        alert("저장 실패: " + err.message);
+        toast("저장 실패: " + err.message, 'error');
     }
 });
 
@@ -351,11 +425,23 @@ $('save-print-btn').addEventListener('click', async e => {
         window.print();
     } catch (err) {
         setBusy(false);
-        alert("저장 실패: " + err.message);
+        toast("저장 실패: " + err.message, 'error');
     }
 });
 
-$('back-btn').addEventListener('click', () => location.href = 'admin.html');
+// Ctrl+S / ⌘+S 로 저장
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        $('save-only-btn').click();
+    }
+});
+
+$('back-btn').addEventListener('click', () => leaveTo('admin.html'));
+// 저장 전 새 리포트는 작성 중인 내용이 임시 저장되어 있으므로 확인 없이 이동
+$('rescore-btn').addEventListener('click', () => reportId
+    ? leaveTo(`test.html?id=${encodeURIComponent(reportId)}`)
+    : leaveTo('test.html', false));
 </script>
 </body>
 </html>

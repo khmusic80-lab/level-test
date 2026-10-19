@@ -12,9 +12,9 @@
     <div class="header-tag">KYUNGHEE MUSIC</div>
     <h2>입시 분석 시스템</h2>
 
-    <form id="client-form">
+    <form id="client-form" novalidate>
         <div class="field">
-            <label for="name">내담자 이름</label>
+            <label for="name">학생 이름<span class="required">*</span></label>
             <input type="text" id="name" maxlength="50" placeholder="학생 성명을 입력하세요">
         </div>
 
@@ -24,7 +24,7 @@
         </div>
 
         <div class="field">
-            <label for="major">지원 전공</label>
+            <label for="major">지원 전공<span class="required">*</span></label>
             <select id="major">
                 <option value="">전공을 선택하세요</option>
             </select>
@@ -54,7 +54,7 @@
 <script type="module">
 import { requireAuth, logout } from './assets/js/firebase.js';
 import { MAJORS } from './assets/js/fields.js';
-import { todayLocal, saveDraft } from './assets/js/utils.js';
+import { todayLocal, loadDraft, saveDraft, setFieldError } from './assets/js/utils.js';
 
 await requireAuth();
 
@@ -63,24 +63,50 @@ const $ = id => document.getElementById(id);
 MAJORS.forEach(m => $('major').add(new Option(m, m)));
 $('date').value = todayLocal();
 
+// 점수 입력 화면에서 "학생 정보 수정"으로 돌아온 경우(?resume): 입력했던 값을 다시 채움
+const resume = new URLSearchParams(location.search).has('resume');
+const prev = loadDraft();
+const resuming = resume && prev?.name && !prev.reportId;
+if (resuming) {
+    const orEmpty = v => (v === "미입력" ? "" : v ?? "");
+    $('name').value = prev.name;
+    $('age').value = orEmpty(prev.age);
+    $('major').value = prev.major ?? "";
+    $('target-school').value = orEmpty(prev.targetSchool);
+    $('date').value = prev.date || todayLocal();
+}
+
+$('name').addEventListener('input', () => setFieldError($('name'), ''));
+$('major').addEventListener('change', () => setFieldError($('major'), ''));
+
 $('client-form').addEventListener('submit', e => {
     e.preventDefault();
     const name = $('name').value.trim();
     const major = $('major').value;
 
-    if (!name || !major) {
-        alert("이름과 전공은 필수 입력 사항입니다.");
-        return;
-    }
+    setFieldError($('name'), name ? '' : '학생 이름을 입력하세요.');
+    setFieldError($('major'), major ? '' : '지원 전공을 선택하세요.');
+    if (!name) return $('name').focus();
+    if (!major) return $('major').focus();
 
-    // 새 학생 입력이므로 이전 임시 데이터(점수 포함)는 통째로 교체
-    saveDraft({
+    const draft = {
         name,
         age: $('age').value.trim() || "미입력",
         major,
         targetSchool: $('target-school').value.trim() || "미입력",
         date: $('date').value || todayLocal()
-    });
+    };
+    if (resuming) {
+        // 정보만 고치러 온 경우 작성 중이던 내용 유지. 전공이 바뀌면 평가 항목이 달라지므로 점수는 버림
+        if (prev.major === major) {
+            draft.scores = prev.scores;
+            draft.scoreInput = prev.scoreInput;
+        }
+        draft.improvement = prev.improvement;
+        draft.finalComment = prev.finalComment;
+    }
+    // 그 외(새 학생)에는 이전 임시 데이터(점수 포함)를 통째로 교체
+    saveDraft(draft);
     location.href = "test.html";
 });
 
