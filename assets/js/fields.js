@@ -64,9 +64,9 @@ export function getFields(major, scores) {
     return VOCAL_MAJORS.includes(major) ? set.vocal : set.instrument;
 }
 
-// 보컬 외 전공은 '실용음악과 입시생 필수 뮤지션' 목록 기준 (1차 필수 청취 → 추가로 꼭 들어야 할 뮤지션 순)
+// '실용음악과 입시생 필수 뮤지션' 목록 기준 (1차 필수 청취 → 추가로 꼭 들어야 할 뮤지션 → 국내 순)
 export const ARTISTS = {
-    '보컬': ['Beyoncé', 'Adele', 'Bruno Mars', 'Demi Lovato', 'Michael Bublé', 'Ariana Grande', 'Tori Kelly', 'Jacob Collier', 'John Legend', 'Jamie Cullum', 'Charlie Puth', 'Justin Bieber', 'Justin Timberlake', '박효신', '김범수', '나얼', '박정현', '이소라', '성시경', '정승환', '김동률', '미노이'],
+    '보컬': ['Stevie Wonder', 'Aretha Franklin', 'Whitney Houston', 'Donny Hathaway', 'Ella Fitzgerald', "D'Angelo", 'Ray Charles', 'Marvin Gaye', 'Michael Jackson', 'George Michael', 'Mariah Carey', 'Beyoncé', 'Sarah Vaughan', 'Billie Holiday', 'Freddie Mercury', '박효신', '이소라', '김범수', '나얼', '박정현', '이승철', '태연', '샘김'],
     '싱송': ['Joni Mitchell', 'Carole King', 'Stevie Wonder', 'Paul Simon', 'John Mayer', 'Billie Eilish', 'James Taylor', 'Nick Drake', 'Jeff Buckley', 'Norah Jones', 'Alicia Keys', 'Ed Sheeran', '윤상', '유희열', '아이유', '김동률'],
     '드럼': ['Steve Gadd', 'Vinnie Colaiuta', 'Dave Weckl', 'Jeff Porcaro', 'Tony Williams', 'Steve Jordan', 'Buddy Rich', 'Elvin Jones', 'Dennis Chambers', 'Questlove', 'Chris Dave', 'Nate Smith'],
     '베이스': ['James Jamerson', 'Jaco Pastorius', 'Pino Palladino', 'Marcus Miller', 'Anthony Jackson', 'Paul Chambers', 'Larry Graham', 'Rocco Prestia', 'Nathan East', 'Victor Wooten', 'Richard Bona', 'Thundercat'],
