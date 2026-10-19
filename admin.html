@@ -9,27 +9,35 @@
         body { padding: 40px; }
         .header { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .header h1 { margin: 0; }
-        .header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-        .header-actions button { padding: 10px 20px; cursor: pointer; border: 1px solid var(--border-color); background: white; border-radius: 8px; font-weight: 600; }
+        .header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .header-actions button { padding: 8px 14px; cursor: pointer; border: 1px solid transparent; background: none; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--muted-color); }
+        .header-actions button:hover:not(:disabled) { background: white; border-color: var(--border-color); color: var(--primary-color); }
+        .header-actions #new-btn { padding: 11px 22px; margin-left: 8px; background: var(--primary-color); color: white; font-size: 15px; font-weight: 800; }
+        .header-actions #new-btn:hover { background: var(--primary-hover); }
 
         .control-bar { background: white; padding: 20px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input, select, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
         .search-input { flex: 1; min-width: 180px; }
+        .result-count { align-self: center; font-size: 13px; font-weight: 700; color: var(--muted-color); white-space: nowrap; }
 
         .table-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8f9fa; padding: 15px; border-bottom: 2px solid #edf2f7; text-align: left; color: var(--muted-color); font-size: 13px; white-space: nowrap; }
-        td { padding: 15px; border-bottom: 1px solid #edf2f7; font-size: 15px; }
+        td { padding: 15px; border-bottom: 1px solid #edf2f7; font-size: 15px; white-space: nowrap; }
         .empty-row { text-align: center; color: var(--muted-color); padding: 40px; }
-        .avg-cell { color: var(--danger-color); font-weight: 800; }
-        .actions { white-space: nowrap; }
+        .avg-cell { color: var(--danger-text); font-weight: 800; }
+        .actions { white-space: nowrap; text-align: right; }
 
-        .tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #ffeaa7; color: #d63031; }
+        /* 행 아무 곳이나 누르면 리포트 열기 */
+        #report-list tr[data-id] { cursor: pointer; }
+        #report-list tr[data-id]:hover { background: #f6f9fc; }
+        .name-link { color: var(--primary-color); font-weight: 800; text-decoration: none; }
+        .name-link:hover { color: var(--accent-text); text-decoration: underline; }
 
-        .btn-view, .btn-edit, .btn-del { color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-        .btn-view { background: var(--accent-color); }
-        .btn-edit { background: #f1c40f; }
-        .btn-del { background: #ff7675; }
+        .tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #ffeaa7; color: var(--danger-text); }
+
+        .btn-edit { background: white; color: var(--primary-color); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-edit:hover { border-color: var(--primary-color); }
 
         /* 수정 모달 */
         #edit-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px; }
@@ -43,17 +51,21 @@
         .score-item label { margin: 0; flex: 1; font-size: 14px; }
         .score-item input { width: 70px; text-align: center; }
         #edit-modal .invalid { border-color: var(--danger-color); }
-        .edit-error { color: var(--danger-color); font-size: 13px; font-weight: 600; margin-top: 12px; }
+        .edit-error { color: var(--danger-text); font-size: 13px; font-weight: 600; margin-top: 12px; }
         .edit-error:empty { display: none; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .modal-actions button { flex: 1; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .modal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; }
+        .modal-actions button { padding: 12px 22px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .modal-actions button:disabled { opacity: 0.6; cursor: default; }
-        #save-edit-btn { background: #2ecc71; }
-        #cancel-edit-btn { background: #95a5a6; }
+        #save-edit-btn { background: var(--success-color); color: white; border: none; }
+        #cancel-edit-btn { background: white; color: var(--primary-color); border: 1px solid var(--border-color); }
+        /* 삭제는 저장·취소와 떨어진 왼쪽에 작게 */
+        #delete-btn { margin-right: auto; padding: 12px 4px; background: none; border: none; color: var(--danger-text); font-weight: 600; text-decoration: underline; }
 
         @media (max-width: 600px) {
             body { padding: 16px; }
             .header h1 { font-size: 22px; }
+            .header-actions #new-btn { margin-left: 0; }
+            th, td { padding: 12px 10px; }
             .modal-row, .modal-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -61,27 +73,28 @@
 <body hidden>
 
 <div class="header">
-    <h1>📊 입시 리포트 관리 시스템</h1>
+    <h1>📊 입시 리포트 관리</h1>
     <div class="header-actions">
         <button type="button" id="backup-btn">💾 전체 백업</button>
         <button type="button" id="restore-btn">📥 백업 복원</button>
         <input type="file" id="restore-file" accept=".json,application/json" hidden>
-        <button type="button" id="home-btn">홈으로 이동</button>
         <button type="button" id="logout-btn">로그아웃</button>
+        <button type="button" id="new-btn">+ 새 리포트 작성</button>
     </div>
 </div>
 
 <div class="control-bar">
-    <input type="text" id="search-input" class="search-input" placeholder="학생 이름을 입력하세요..." aria-label="학생 이름 검색">
+    <input type="search" id="search-input" class="search-input" placeholder="학생 이름 또는 목표 학교로 검색" aria-label="학생 이름 또는 목표 학교 검색">
     <select id="major-filter" aria-label="전공 필터">
         <option value="">모든 전공</option>
     </select>
+    <div id="result-count" class="result-count" aria-live="polite"></div>
 </div>
 
 <div class="table-container">
     <table>
         <thead>
-            <tr><th>분석일</th><th>성명</th><th>전공</th><th>목표학교</th><th>평균</th><th>관리</th></tr>
+            <tr><th>분석일</th><th>성명</th><th>전공</th><th>목표학교</th><th>평균</th><th></th></tr>
         </thead>
         <tbody id="report-list">
             <tr><td colspan="6" class="empty-row">불러오는 중...</td></tr>
@@ -97,8 +110,12 @@
             <div class="modal-field"><label for="edit-name">학생 성명</label><input type="text" id="edit-name" maxlength="50"></div>
             <div class="modal-field"><label for="edit-target">목표 학교</label><input type="text" id="edit-target" maxlength="100"></div>
         </div>
+        <div class="modal-row">
+            <div class="modal-field"><label for="edit-age">나이 / 학년</label><input type="text" id="edit-age" maxlength="30"></div>
+            <div class="modal-field"><label for="edit-date">분석 일시</label><input type="date" id="edit-date"></div>
+        </div>
 
-        <h4 style="margin-bottom:5px; color: var(--accent-color);">🎯 세부 능력치 수정</h4>
+        <h4 style="margin-bottom:5px; color: var(--accent-text);">🎯 세부 능력치 수정</h4>
         <div id="score-edit-grid" class="modal-grid"></div>
 
         <div class="modal-field"><label for="edit-improvement">장점 및 보완점</label><textarea id="edit-improvement" rows="3"></textarea></div>
@@ -106,8 +123,9 @@
         <div id="edit-error" class="edit-error" role="alert"></div>
 
         <div class="modal-actions">
-            <button type="button" id="save-edit-btn">변경사항 저장</button>
+            <button type="button" id="delete-btn">이 리포트 삭제</button>
             <button type="button" id="cancel-edit-btn">취소</button>
+            <button type="button" id="save-edit-btn">변경사항 저장</button>
         </div>
     </div>
 </div>
@@ -115,8 +133,8 @@
 <script type="module">
 import { requireAuth, logout } from './assets/js/firebase.js';
 import { listReports, updateReport, deleteReport, exportReports, upsertReports } from './assets/js/reports.js';
-import { MAJORS, getFields } from './assets/js/fields.js';
-import { escapeHtml, isValidScore, calcAverage, todayLocal, toast } from './assets/js/utils.js';
+import { MAJORS, getFields, minScore } from './assets/js/fields.js';
+import { escapeHtml, isValidScore, calcAverage, todayLocal, blankIfUnset, toast } from './assets/js/utils.js';
 
 await requireAuth();
 
@@ -146,23 +164,27 @@ function formatAvg(value) {
     return Number.isFinite(n) ? n.toFixed(1) : '-';
 }
 
-// DB 값은 모두 escapeHtml을 거쳐서 넣고, 버튼은 data-id로만 식별 (인라인 onclick 사용 안 함)
+const reportUrl = id => `result.html?id=${encodeURIComponent(id)}`;
+
+// DB 값은 모두 escapeHtml을 거쳐서 넣고, 행·버튼은 data-id로만 식별 (인라인 onclick 사용 안 함)
+// 행을 누르면 리포트 열기, 이름은 링크라서 Ctrl/⌘+클릭으로 새 탭에서도 열 수 있음
 function renderTable(list) {
+    $('result-count').textContent = list.length === allReports.length
+        ? `총 ${allReports.length}건`
+        : `${list.length}건 / 전체 ${allReports.length}건`;
     if (!list.length) {
         showMessageRow(allReports.length ? "검색 결과가 없습니다." : "저장된 리포트가 없습니다.");
         return;
     }
     $('report-list').innerHTML = list.map(item => `
-        <tr>
+        <tr data-id="${escapeHtml(item.id)}">
             <td>${escapeHtml(item.analysis_date)}</td>
-            <td><b>${escapeHtml(item.name)}</b></td>
+            <td><a class="name-link" href="${escapeHtml(reportUrl(item.id))}">${escapeHtml(item.name)}</a></td>
             <td><span class="tag">${escapeHtml(item.major)}</span></td>
-            <td>${escapeHtml(item.target_school || '-')}</td>
+            <td>${escapeHtml(blankIfUnset(item.target_school) || '-')}</td>
             <td class="avg-cell">${formatAvg(item.average_score)}</td>
             <td class="actions">
-                <button type="button" class="btn-view" data-action="view" data-id="${escapeHtml(item.id)}">보기</button>
-                <button type="button" class="btn-edit" data-action="edit" data-id="${escapeHtml(item.id)}">수정</button>
-                <button type="button" class="btn-del" data-action="delete" data-id="${escapeHtml(item.id)}">삭제</button>
+                <button type="button" class="btn-edit" data-action="edit">수정</button>
             </td>
         </tr>`).join('');
 }
@@ -171,45 +193,37 @@ function filterData() {
     const search = $('search-input').value.trim().toLowerCase();
     const major = $('major-filter').value;
     renderTable(allReports.filter(r =>
-        (r.name || '').toLowerCase().includes(search) && (major === "" || r.major === major)));
+        [r.name, blankIfUnset(r.target_school)].some(v => (v || '').toLowerCase().includes(search))
+        && (major === "" || r.major === major)));
 }
 
-$('report-list').addEventListener('click', async e => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
-    const id = btn.dataset.id;
-    const item = allReports.find(r => r.id === id);
-
-    if (btn.dataset.action === 'view') {
-        location.href = `result.html?id=${encodeURIComponent(id)}`;
-    } else if (btn.dataset.action === 'edit') {
+$('report-list').addEventListener('click', e => {
+    const row = e.target.closest('tr[data-id]');
+    if (!row || e.target.closest('a')) return;
+    const item = allReports.find(r => r.id === row.dataset.id);
+    if (e.target.closest('button[data-action="edit"]')) {
         if (item) openEdit(item);
-    } else if (btn.dataset.action === 'delete') {
-        if (!confirm(`${item?.name ?? ''} 학생의 리포트를 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.`)) return;
-        btn.disabled = true;
-        try {
-            await deleteReport(id);
-            await fetchReports();
-            toast("리포트를 삭제했습니다.");
-        } catch (err) {
-            toast("삭제 실패: " + err.message, 'error');
-            btn.disabled = false;
-        }
+    } else {
+        location.href = reportUrl(row.dataset.id);
     }
 });
 
 function openEdit(item) {
     editing = item;
     $('edit-name').value = item.name || '';
-    $('edit-target').value = item.target_school || '';
+    $('edit-target').value = blankIfUnset(item.target_school);
+    $('edit-age').value = blankIfUnset(item.age);
+    $('edit-date').value = item.analysis_date || '';
     $('edit-improvement').value = item.improvement || '';
     $('edit-comment').value = item.final_comment || '';
 
-    $('score-edit-grid').innerHTML = getFields(item.major, item.scores).map(f => `
+    const fields = getFields(item.major, item.scores);
+    const min = minScore(fields);
+    $('score-edit-grid').innerHTML = fields.map(f => `
         <div class="score-item">
             <label for="edit-score-${f.key}">${escapeHtml(f.label)}</label>
             <input type="number" id="edit-score-${f.key}" class="score-input" data-key="${f.key}"
-                   value="${escapeHtml(item.scores?.[f.key] ?? 0)}" min="0" max="100">
+                   value="${escapeHtml(item.scores?.[f.key] ?? min)}" min="${min}" max="100">
         </div>`).join('');
 
     $('edit-error').textContent = '';
@@ -242,12 +256,13 @@ async function saveEdit() {
     if (!name) return showEditError($('edit-name'), "학생 성명을 입력하세요.");
 
     const fields = getFields(editing.major, editing.scores);
+    const min = minScore(fields);
     const newScores = {};
     for (const f of fields) {
         const input = $(`edit-score-${f.key}`);
         const n = Number(input.value);
-        if (input.value.trim() === '' || !isValidScore(n)) {
-            return showEditError(input, `[${f.label}] 0~100 사이의 숫자를 입력해 주세요.`);
+        if (input.value.trim() === '' || !isValidScore(n, min)) {
+            return showEditError(input, `[${f.label}] ${min}~100 사이의 숫자를 입력해 주세요.`);
         }
         newScores[f.key] = n;
     }
@@ -258,6 +273,9 @@ async function saveEdit() {
         await updateReport(editing.id, {
             name,
             target_school: $('edit-target').value.trim(),
+            age: $('edit-age').value.trim(),
+            // 날짜 형식이 아닌 예전 값은 날짜 칸에 표시되지 않으므로, 비워 두면 원래 값 유지
+            analysis_date: $('edit-date').value || editing.analysis_date || '',
             improvement: $('edit-improvement').value,
             final_comment: $('edit-comment').value,
             scores: newScores,
@@ -268,6 +286,23 @@ async function saveEdit() {
         await fetchReports();
     } catch (err) {
         toast("저장 실패: " + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function deleteEditing() {
+    if (!editing) return;
+    if (!confirm(`${editing.name} 학생의 리포트를 삭제하시겠습니까?\n삭제하면 되돌릴 수 없습니다.`)) return;
+    const btn = $('delete-btn');
+    btn.disabled = true;
+    try {
+        await deleteReport(editing.id);
+        closeEdit(true);
+        toast("리포트를 삭제했습니다.");
+        await fetchReports();
+    } catch (err) {
+        toast("삭제 실패: " + err.message, 'error');
     } finally {
         btn.disabled = false;
     }
@@ -305,10 +340,11 @@ function normalizeForRestore(r, index) {
     if (!r.scores || typeof r.scores !== 'object') throw new Error(`${where}: scores가 없습니다.`);
 
     const fields = getFields(r.major, r.scores);
+    const min = minScore(fields);
     const scores = {};
     for (const f of fields) {
-        const n = Number(r.scores[f.key] ?? 0);
-        if (!isValidScore(n)) throw new Error(`${where}: [${f.label}] 점수 "${r.scores[f.key]}"가 0~100 범위가 아닙니다.`);
+        const n = Number(r.scores[f.key] ?? min);
+        if (!isValidScore(n, min)) throw new Error(`${where}: [${f.label}] 점수 "${r.scores[f.key]}"가 ${min}~100 범위가 아닙니다.`);
         scores[f.key] = n;
     }
 
@@ -392,6 +428,7 @@ $('search-input').addEventListener('input', filterData);
 $('major-filter').addEventListener('change', filterData);
 $('save-edit-btn').addEventListener('click', saveEdit);
 $('cancel-edit-btn').addEventListener('click', () => closeEdit());
+$('delete-btn').addEventListener('click', deleteEditing);
 $('edit-modal').addEventListener('input', e => {
     if (!e.target.classList.contains('invalid')) return;
     e.target.classList.remove('invalid');
@@ -399,7 +436,7 @@ $('edit-modal').addEventListener('input', e => {
 });
 $('edit-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEdit(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEdit(); });
-$('home-btn').addEventListener('click', () => location.href = 'index.html');
+$('new-btn').addEventListener('click', () => location.href = 'index.html');
 $('logout-btn').addEventListener('click', logout);
 
 fetchReports();

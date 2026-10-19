@@ -32,13 +32,13 @@
         .info-input.left { text-align: left; padding-left: 15px; }
 
         .avg-score { font-weight: 800; color: var(--danger-color); font-size: 1.6em; }
-        #score-row { font-weight: 800; color: var(--accent-color); }
+        #score-row { font-weight: 800; color: var(--accent-text); }
 
         /* 텍스트 영역 */
         textarea {
             width: 100%; padding: 20px; border: 1px solid var(--border-color); font-size: 15px;
-            line-height: 1.8; resize: none; height: 180px; background: #fff; outline: none;
-            transition: all 0.3s;
+            line-height: 1.8; resize: none; min-height: 180px; overflow: hidden; background: #fff; outline: none;
+            transition: border-color 0.3s, background 0.3s;
         }
         textarea:focus { border: 1px solid var(--accent-color); background: #fcfdfe; }
 
@@ -56,14 +56,15 @@
 
         /* 버튼 설정 */
         .save-status { margin-top: 40px; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted-color); }
-        .save-status.unsaved { color: #d35400; }
+        .save-status.unsaved { color: var(--warning-text); }
         .button-group { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         .button-group button { padding: 15px 30px; border: none; color: white; border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 700; transition: 0.2s; }
         .button-group button:hover:not(:disabled) { opacity: 0.8; transform: translateY(-1px); }
         .button-group button:disabled { opacity: 0.6; cursor: default; }
-        #back-btn, #rescore-btn { background: #7f8c8d; }
-        #save-only-btn { background: var(--accent-color); flex: 1; max-width: 200px; }
-        #save-print-btn { background: #2ecc71; flex: 1; max-width: 250px; }
+        #back-btn, #rescore-btn { background: white; color: var(--primary-color); border: 1px solid var(--border-color); }
+        #back-btn:hover, #rescore-btn:hover { border-color: var(--primary-color); opacity: 1; }
+        #save-only-btn { background: var(--accent-text); flex: 1; max-width: 200px; }
+        #save-print-btn { background: var(--success-color); flex: 1; max-width: 250px; }
 
         @media (max-width: 700px) {
             .container { margin: 0; padding: 24px 16px; border-radius: 0; }
@@ -168,7 +169,7 @@
 import { requireAuth } from './assets/js/firebase.js';
 import { getReport, createReport, updateReport, listReportsByMajor } from './assets/js/reports.js';
 import { getFields, ARTISTS } from './assets/js/fields.js';
-import { calcAverage, loadDraft, saveDraft, toast } from './assets/js/utils.js';
+import { calcAverage, blankIfUnset, loadDraft, saveDraft, toast } from './assets/js/utils.js';
 
 await requireAuth();
 
@@ -245,12 +246,15 @@ async function loadReport() {
 function render(r) {
     $('disp-name').value = r.name ?? "";
     $('disp-major').value = r.major ?? "";
-    $('disp-age').value = r.age ?? "";
-    $('disp-date').value = r.analysis_date ?? "";
-    $('target-school').value = r.target_school ?? "";
+    $('disp-age').value = blankIfUnset(r.age) || "-";
+    $('disp-date').value = r.analysis_date || "-";
+    $('target-school').value = blankIfUnset(r.target_school) || "-";
     $('improvement-area').value = r.improvement ?? "";
     $('comment-area').value = r.final_comment ?? "";
-    document.querySelectorAll('textarea[data-print]').forEach(syncPrintText);
+    document.querySelectorAll('textarea[data-print]').forEach(t => {
+        syncPrintText(t);
+        autosize(t);
+    });
 
     const fields = getFields(r.major, r.scores);
     const values = fields.map(f => Number(r.scores?.[f.key]) || 0);
@@ -324,6 +328,12 @@ async function renderMajorAverage(r) {
     }
 }
 
+// 내용이 길어지면 스크롤 대신 칸이 늘어나도록
+function autosize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight + 2}px`;
+}
+
 function syncPrintText(textarea) {
     $(textarea.dataset.print).textContent = textarea.value;
 }
@@ -331,12 +341,15 @@ function syncPrintText(textarea) {
 document.querySelectorAll('textarea[data-print]').forEach(t =>
     t.addEventListener('input', () => {
         syncPrintText(t);
+        autosize(t);
         // 저장 전 새 리포트: 점수 다시 입력 등으로 다녀와도 작성한 문장이 남도록 임시 저장
         if (!reportId) {
             saveDraft({ ...loadDraft(), improvement: $('improvement-area').value, finalComment: $('comment-area').value });
         }
         updateSaveStatus();
     }));
+
+window.addEventListener('resize', () => document.querySelectorAll('textarea[data-print]').forEach(autosize));
 
 function formatTime(d) {
     const pad = n => String(n).padStart(2, '0');

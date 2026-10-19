@@ -33,7 +33,7 @@
         /* 항목명: 배경 없이 파란색 글씨로만 강조 */
         .field label {
             font-size: 14px;
-            color: var(--accent-color);
+            color: var(--accent-text);
             margin-bottom: 8px;
             font-weight: 800;
         }
@@ -47,7 +47,7 @@
         }
 
         .progress-text { margin-top: 28px; font-size: 13px; font-weight: 700; color: var(--muted-color); }
-        .progress-text.complete { color: var(--accent-color); }
+        .progress-text.complete { color: var(--accent-text); }
 
         .btn-group { margin-top: 16px; }
         #submit-btn { padding: 16px; font-size: 16px; }
@@ -78,7 +78,7 @@
 <script type="module">
 import { requireAuth } from './assets/js/firebase.js';
 import { getReport, updateReport } from './assets/js/reports.js';
-import { getFields } from './assets/js/fields.js';
+import { getFields, minScore } from './assets/js/fields.js';
 import { escapeHtml, isValidScore, calcAverage, loadDraft, saveDraft, setFieldError, toast } from './assets/js/utils.js';
 
 await requireAuth();
@@ -117,12 +117,13 @@ function init(name, major, initialScores) {
 
     // 저장된 리포트 수정 시에는 그 리포트의 항목 그대로, 새 입력은 현재 항목으로
     const fields = getFields(major, editId ? initialScores : undefined);
+    const min = minScore(fields);
     const inputOf = f => $(`score-${f.key}`);
 
     $('dynamic-fields').innerHTML = fields.map(f => `
         <div class="field">
             <label for="score-${f.key}">${escapeHtml(f.label)}</label>
-            <input type="number" id="score-${f.key}" min="0" max="100" inputmode="decimal" placeholder="0~100" enterkeyhint="next">
+            <input type="number" id="score-${f.key}" min="${min}" max="100" inputmode="decimal" placeholder="${min}~100" enterkeyhint="next">
         </div>
     `).join('');
 
@@ -137,7 +138,7 @@ function init(name, major, initialScores) {
     const problemOf = input => {
         const raw = input.value.trim();
         if (raw === '') return '';
-        return isValidScore(Number(raw)) ? null : '0~100 사이로 입력하세요.';
+        return isValidScore(Number(raw), min) ? null : `${min}~100 사이로 입력하세요.`;
     };
 
     function updateProgress() {

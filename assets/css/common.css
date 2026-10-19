@@ -5,15 +5,23 @@
     --primary-hover: #1a252f;
     --accent-color: #3498db;
     --danger-color: #e74c3c;
-    --muted-color: #7f8c8d;
+    --muted-color: #687576;
     --bg-color: #f4f7fa;
     --border-color: #dcdde1;
+    /* 흰 배경 위 글씨나 흰 글씨 버튼 배경으로 쓸 때 (명도 대비 4.5:1 이상) */
+    --accent-text: #1f6fa8;
+    --danger-text: #c0392b;
+    --success-color: #1e8449;
+    --warning-text: #b34700;
 }
 
 * {
     box-sizing: border-box;
     font-family: 'Pretendard', -apple-system, sans-serif !important;
 }
+
+/* 키보드로 이동할 때만 보이는 포커스 표시 */
+button:focus-visible, a:focus-visible { outline: 3px solid rgba(31, 111, 168, 0.45); outline-offset: 2px; }
 
 /* 로그인 확인 전까지 body를 숨길 때 사용 */
 [hidden] { display: none !important; }
@@ -46,7 +54,7 @@ body.centered {
 .header-tag {
     font-size: 14px;
     font-weight: 700;
-    color: var(--accent-color);
+    color: var(--accent-text);
     letter-spacing: 2px;
     margin-bottom: 8px;
 }
@@ -132,14 +140,14 @@ body.centered {
     cursor: pointer;
 }
 
-.footer-text { margin-top: 25px; font-size: 12px; color: #bdc3c7; font-weight: 500; }
+.footer-text { margin-top: 25px; font-size: 12px; color: var(--muted-color); font-weight: 500; }
 
-.required { color: var(--danger-color); margin-left: 2px; }
+.required { color: var(--danger-text); margin-left: 2px; }
 
 /* 입력 오류: 칸을 빨갛게 표시하고 아래에 이유를 보여줌 */
 .field.invalid input, .field.invalid select { border-color: var(--danger-color); }
 .field.invalid input:focus, .field.invalid select:focus { box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15); }
-.field-error { color: var(--danger-color); font-size: 12px; font-weight: 600; margin-top: 5px; padding-left: 2px; text-align: left; }
+.field-error { color: var(--danger-text); font-size: 12px; font-weight: 600; margin-top: 5px; padding-left: 2px; text-align: left; }
 .field-error:empty { display: none; }
 
 /* 토스트 알림 (utils.js의 toast) */
@@ -162,5 +170,5 @@ body.centered {
     z-index: 2000;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-.toast.error { background: var(--danger-color); }
+.toast.error { background: var(--danger-text); }
 @media print { .toast { display: none !important; } }

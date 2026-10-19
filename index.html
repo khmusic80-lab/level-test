@@ -54,7 +54,7 @@
 <script type="module">
 import { requireAuth, logout } from './assets/js/firebase.js';
 import { MAJORS } from './assets/js/fields.js';
-import { todayLocal, loadDraft, saveDraft, setFieldError } from './assets/js/utils.js';
+import { todayLocal, blankIfUnset, loadDraft, saveDraft, setFieldError } from './assets/js/utils.js';
 
 await requireAuth();
 
@@ -68,11 +68,10 @@ const resume = new URLSearchParams(location.search).has('resume');
 const prev = loadDraft();
 const resuming = resume && prev?.name && !prev.reportId;
 if (resuming) {
-    const orEmpty = v => (v === "미입력" ? "" : v ?? "");
     $('name').value = prev.name;
-    $('age').value = orEmpty(prev.age);
+    $('age').value = blankIfUnset(prev.age);
     $('major').value = prev.major ?? "";
-    $('target-school').value = orEmpty(prev.targetSchool);
+    $('target-school').value = blankIfUnset(prev.targetSchool);
     $('date').value = prev.date || todayLocal();
 }
 
@@ -91,9 +90,9 @@ $('client-form').addEventListener('submit', e => {
 
     const draft = {
         name,
-        age: $('age').value.trim() || "미입력",
+        age: $('age').value.trim(),
         major,
-        targetSchool: $('target-school').value.trim() || "미입력",
+        targetSchool: $('target-school').value.trim(),
         date: $('date').value || todayLocal()
     };
     if (resuming) {

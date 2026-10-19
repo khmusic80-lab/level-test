@@ -15,8 +15,14 @@ export function todayLocal() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export function isValidScore(n) {
-    return Number.isFinite(n) && n >= 0 && n <= 100;
+// 비워 둔 값은 ''로. 예전 리포트에는 빈 값이 "미입력"이라는 글자로 저장되어 있음
+export function blankIfUnset(value) {
+    const s = String(value ?? '').trim();
+    return s === '미입력' ? '' : s;
+}
+
+export function isValidScore(n, min = 0) {
+    return Number.isFinite(n) && n >= min && n <= 100;
 }
 
 // 소수 첫째 자리까지의 숫자

@@ -54,6 +54,11 @@ const LEGACY_FIELDS = {
     ]
 };
 
+// 점수 입력 최하점은 50점 (원장님과 협의). 항목 개편 전 리포트는 예전처럼 0점부터
+export function minScore(fields) {
+    return fields === LEGACY_FIELDS.vocal || fields === LEGACY_FIELDS.instrument ? 0 : 50;
+}
+
 const CURRENT_KEYS = new Set([...FIELDS.vocal, ...FIELDS.instrument].map(f => f.key));
 
 // 저장된 점수(scores)를 넘기면 그 점수가 입력될 당시의 항목 세트를 돌려줌 (예전 키만 있으면 LEGACY_FIELDS).
