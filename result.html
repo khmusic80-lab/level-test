@@ -427,6 +427,15 @@ $('save-print-btn').addEventListener('click', async e => {
     }
 });
 
+// 인쇄(PDF 저장) 파일 이름: «황은규_리포트_경희실용음악학원»
+// 브라우저가 페이지 제목을 파일 이름으로 쓰므로 인쇄하는 동안만 제목을 바꾼다 (Ctrl+P 도 같다)
+const PAGE_TITLE = document.title;
+window.addEventListener('beforeprint', () => {
+    const name = (report?.name ?? "").trim().replace(/[\\/:*?"<>|]/g, "");
+    document.title = name ? `${name}_리포트_경희실용음악학원` : "리포트_경희실용음악학원";
+});
+window.addEventListener('afterprint', () => { document.title = PAGE_TITLE; });
+
 // Ctrl+S / ⌘+S 로 저장
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
